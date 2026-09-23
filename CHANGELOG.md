@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.3](https://github.com/denkwerk/favicon-generator/compare/v0.1.2...v0.1.3) (2026-09-23)
+
+### Features
+
+* **cli:** add -i/--input and -o/--output flags ([2de4868](https://github.com/denkwerk/favicon-generator/commit/2de48684b35a20dc7aada73cebedc2a779dffd04))
+
+### Documentation
+
+* **readme:** show flags and config file side by side in the quick start ([b24d64b](https://github.com/denkwerk/favicon-generator/commit/b24d64b239dd396c89b54648b2f8a900ec8ad172))
+
 ## [0.1.2](https://github.com/denkwerk/favicon-generator/compare/v0.1.1...v0.1.2) (2026-09-23)
 
 ### Features

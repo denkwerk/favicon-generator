@@ -1,6 +1,6 @@
 {
   "name": "@denkwerk/nuxt-favicon-generator",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Nuxt module that generates favicons, touch icons and a web app manifest from an SVG or a Figma node, and adds the head tags",
   "license": "MIT",
   "repository": {
