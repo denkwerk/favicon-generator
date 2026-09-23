@@ -1,6 +1,6 @@
 import { cpSync, mkdtempSync, readdirSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /**
@@ -19,11 +19,11 @@ export function headTags(html: string): string[] {
   return [...html.matchAll(/<(?:link|meta)\b[^>]*>/g)].map((match) => match[0])
 }
 
-/** Files below `dir`, relative and sorted, without directories. */
+/** Files below `dir`, relative with `/` separators (also on Windows) and sorted, without directories. */
 export function listFiles(dir: string): string[] {
   return readdirSync(dir, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())
-    .map((entry) => join(entry.parentPath, entry.name).slice(dir.length + 1))
+    .map((entry) => relative(dir, join(entry.parentPath, entry.name)).split(sep).join('/'))
     .sort()
 }
 
