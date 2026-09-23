@@ -1,0 +1,14 @@
+{
+  "name": "example-cli-figma",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "favicon-generator",
+    "typecheck": "tsc"
+  },
+  "devDependencies": {
+    "@denkwerk/favicon-generator": "workspace:*",
+    "@types/node": "^24.13.6",
+    "typescript": "^7.0.2"
+  }
+}

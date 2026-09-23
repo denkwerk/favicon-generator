@@ -15,6 +15,7 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
+  FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
 
 jobs:
   check:
@@ -47,7 +48,17 @@ jobs:
       # Builds the crate, the npm packages and the Nuxt examples (which run the
       # module), lints and tests the Cargo workspace, type-checks the examples,
       # checks the Nuxt output and runs the CLI and TypeScript examples.
-      - run: pnpm turbo run build lint test typecheck generate
+      # example-cli-figma needs a Figma token; it runs in its own step below.
+      - run: pnpm turbo run build lint test typecheck generate --filter='!example-cli-figma'
+      - run: pnpm turbo run typecheck --filter=example-cli-figma
+
+      - name: Figma example
+        if: env.FIGMA_TOKEN != ''
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+        run: |
+          pnpm turbo run generate --filter=example-cli-figma
+          test -s examples/cli-figma/public/favicons/favicon.ico
 
       - name: Verify generated files
         shell: bash

@@ -16,6 +16,7 @@ A [Turborepo](https://turborepo.dev) monorepo that mixes a Cargo workspace (usin
 | [`packages/favicon-generator`](packages/favicon-generator) | `@denkwerk/favicon-generator` | npm package: `defineConfig`, `generate()`, and the CLI launcher |
 | [`packages/nuxt-favicon-generator`](packages/nuxt-favicon-generator) | `@denkwerk/nuxt-favicon-generator` | Nuxt module: generates, serves and links the favicons |
 | [`examples/cli`](examples/cli) | `example-cli` | The CLI as a package script, configured by `favicon.config.ts` |
+| [`examples/cli-figma`](examples/cli-figma) | `example-cli-figma` | The same, exporting the icon from Figma (needs a token) |
 | [`examples/typescript`](examples/typescript) | `example-typescript` | The programmatic `generate()` API |
 | [`examples/nuxt`](examples/nuxt) | `example-nuxt` | Nuxt app with the module configured in `nuxt.config.ts` |
 | [`examples/nuxt-config-file`](examples/nuxt-config-file) | `example-nuxt-config-file` | Nuxt app with the module configured by `favicon.config.ts` |
@@ -32,12 +33,13 @@ Requires Node.js ≥ 22.18, pnpm and a Rust toolchain.
 ```bash
 pnpm install
 pnpm turbo run build lint test typecheck   # everything, including building and checking the Nuxt example
-pnpm turbo run generate                    # run the CLI and TypeScript examples (the CLI one uses Figma if a token is available)
+pnpm turbo run generate                    # run the CLI examples and the TypeScript example (cli-figma needs a Figma token)
 pnpm --filter example-nuxt dev             # the Nuxt example in dev mode
 pnpm turbo run format                      # cargo fmt
 ```
 
-To test the Figma export locally, put a personal access token into `.figma-token` (gitignored).
+To test the Figma export locally, put a personal access token into `.figma-token` (gitignored). In CI, the Figma
+example runs when a `FIGMA_TOKEN` repository secret is set.
 
 ## Releasing
 

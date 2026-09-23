@@ -45,6 +45,11 @@
     "generate": {
       "dependsOn": ["^build"],
       "cache": false
+    },
+    "example-cli-figma#generate": {
+      "dependsOn": ["^build"],
+      "env": ["FIGMA_TOKEN"],
+      "cache": false
     }
   }
 }
