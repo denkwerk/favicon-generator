@@ -10,13 +10,27 @@ export default {
       preset: 'conventionalcommits',
       // While on 0.x: breaking changes bump the minor version, features and
       // fixes the patch version, so `^0.x.y` ranges only pick up compatible
-      // releases. Remove these rules to release 1.0.0 with the next breaking change.
+      // releases. Remove the first two rules to release 1.0.0 with the next
+      // breaking change.
       releaseRules: [
         { breaking: true, release: 'minor' },
         { type: 'feat', release: 'patch' },
+        // README changes only reach the npm package pages with a release.
+        { type: 'docs', scope: 'readme', release: 'patch' },
       ],
     }],
-    ['@semantic-release/release-notes-generator', { preset: 'conventionalcommits' }],
+    ['@semantic-release/release-notes-generator', {
+      preset: 'conventionalcommits',
+      presetConfig: {
+        types: [
+          { type: 'feat', section: 'Features' },
+          { type: 'fix', section: 'Bug Fixes' },
+          { type: 'perf', section: 'Performance Improvements' },
+          { type: 'revert', section: 'Reverts' },
+          { type: 'docs', section: 'Documentation' },
+        ],
+      },
+    }],
     ['@semantic-release/changelog', { changelogTitle: '# Changelog' }],
     ['@semantic-release/exec', {
       // The dry run in the workflow's version job hands the version to the
