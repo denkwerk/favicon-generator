@@ -53,14 +53,24 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options = 
       }
     },
 
+    // Rollup, Rolldown and Vite; webpack and Rspack emit in `processAssets` below.
     async buildEnd() {
       const favicons = await current
-      if (serve || !favicons || isServerBuild(this)) {
+      if (serve || !favicons || isServerBuild(this) || isWebpackLike(this)) {
         return
       }
       for (const file of favicons.files) {
         this.emitFile({ type: 'asset', fileName: `${outputDir}${file}`, source: await readFile(join(favicons.dir, file)) })
       }
+    },
+
+    // unplugin runs `buildEnd` after webpack sealed the compilation, where adding
+    // assets is deprecated; `processAssets` is the stage meant for it.
+    webpack(compiler) {
+      emitInProcessAssets(compiler, () => current, outputDir)
+    },
+    rspack(compiler) {
+      emitInProcessAssets(compiler, () => current, outputDir)
     },
 
     resolveId(id) {
@@ -108,6 +118,13 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options = 
       configureServer(server) {
         const warn = (message: string) => server.config.logger.warn(`[${PLUGIN_NAME}] ${message}`)
         const urlPrefix = joinUrl(server.config.base, prefix)
+        // Generating takes a moment; the server may be closed by then, and a
+        // closed watcher must not be given new files to watch.
+        const watch = (favicons: Favicons | null) => {
+          if (favicons && !(server.watcher as { closed?: boolean }).closed) {
+            server.watcher.add(favicons.watchFiles)
+          }
+        }
 
         // Before Vite's own middlewares, which would answer with index.html.
         server.middlewares.use(async (req, res, next) => {
@@ -137,7 +154,7 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options = 
           }
           try {
             const updated = await prepare(warn)
-            server.watcher.add(updated?.watchFiles ?? [])
+            watch(updated)
             for (const environment of Object.values(server.environments)) {
               const module = environment.moduleGraph.getModuleById(RESOLVED_VIRTUAL_MODULE_ID)
               if (module) {
@@ -151,10 +168,53 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options = 
           }
         })
 
-        void (current ?? prepare(warn)).then((favicons) => server.watcher.add(favicons?.watchFiles ?? []))
+        void (current ?? prepare(warn)).then(watch)
       },
     },
   }
+}
+
+/** The part of a webpack or Rspack compiler used to emit the files. */
+interface WebpackLikeCompiler {
+  webpack: {
+    Compilation: { PROCESS_ASSETS_STAGE_ADDITIONAL: number }
+    sources: { RawSource: new (source: Buffer) => unknown }
+  }
+  hooks: {
+    thisCompilation: {
+      tap: (name: string, callback: (compilation: WebpackLikeCompilation) => void) => void
+    }
+  }
+}
+
+interface WebpackLikeCompilation {
+  hooks: {
+    processAssets: {
+      tapPromise: (options: { name: string, stage: number }, callback: () => Promise<void>) => void
+    }
+  }
+  emitAsset: (file: string, source: never) => void
+}
+
+function emitInProcessAssets(compiler: unknown, favicons: () => Promise<Favicons | null> | undefined, outputDir: string) {
+  const { webpack, hooks } = compiler as WebpackLikeCompiler
+  hooks.thisCompilation.tap(PLUGIN_NAME, (compilation) => {
+    compilation.hooks.processAssets.tapPromise(
+      { name: PLUGIN_NAME, stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
+      async () => {
+        const generated = await favicons()
+        for (const file of generated?.files ?? []) {
+          const source = new webpack.sources.RawSource(await readFile(join(generated!.dir, file)))
+          compilation.emitAsset(`${outputDir}${file}`, source as never)
+        }
+      },
+    )
+  })
+}
+
+function isWebpackLike(context: { getNativeBuildContext?: () => { framework: string } }): boolean {
+  const framework = context.getNativeBuildContext?.().framework
+  return framework === 'webpack' || framework === 'rspack'
 }
 
 /** Vite builds each environment separately; only the browser's output gets the files. */

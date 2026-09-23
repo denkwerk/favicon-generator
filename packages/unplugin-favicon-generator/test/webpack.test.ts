@@ -7,20 +7,31 @@ import rspackFavicons from '../src/rspack.js'
 import webpackFavicons from '../src/webpack.js'
 import { DEFAULT_FILES, copyFixture, listFiles } from './helpers.js'
 
-interface Compiler {
-  run: (callback: (error: Error | null, stats?: { hasErrors: () => boolean, toString: () => string }) => void) => void
+interface Stats {
+  hasErrors: () => boolean
+  toString: () => string
 }
 
-function run(compiler: Compiler) {
-  return new Promise<void>((resolve, reject) => {
-    compiler.run((error, stats) => {
-      if (error || stats?.hasErrors()) {
-        reject(error ?? new Error(stats!.toString()))
-      } else {
-        resolve()
-      }
+interface Compiler {
+  run: (callback: (error: Error | null, stats?: Stats) => void) => void
+  close: (callback: (error?: Error | null) => void) => void
+}
+
+/** Runs the compiler once and closes it, so that no worker or handle outlives the test. */
+async function run(compiler: Compiler) {
+  try {
+    await new Promise<void>((resolve, reject) => {
+      compiler.run((error, stats) => {
+        if (error || stats?.hasErrors()) {
+          reject(error ?? new Error(stats!.toString()))
+        } else {
+          resolve()
+        }
+      })
     })
-  })
+  } finally {
+    await new Promise<void>((resolve, reject) => compiler.close((error) => (error ? reject(error) : resolve())))
+  }
 }
 
 const bundlers = {
@@ -44,7 +55,16 @@ for (const [name, create] of Object.entries(bundlers)) {
   describe(name, () => {
     it('emits the files and bundles the tags with base', async () => {
       const root = copyFixture('webpack')
-      await run(create(root))
+      const warnings: string[] = []
+      const onWarning = (warning: Error) => warnings.push(warning.message)
+      process.on('warning', onWarning)
+      try {
+        await run(create(root))
+      } finally {
+        process.off('warning', onWarning)
+      }
+      // Assets added after the compilation is sealed are deprecated.
+      expect(warnings.filter((warning) => warning.includes('Compilation.assets'))).toEqual([])
 
       const dist = join(root, 'dist')
       expect(listFiles(dist)).toEqual([...DEFAULT_FILES, 'main.js'])
