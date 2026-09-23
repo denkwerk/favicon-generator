@@ -276,8 +276,8 @@ pnpm turbo run generate                    # run the CLI and Node.js API example
 pnpm --filter example-nuxt dev             # the Nuxt example in dev mode
 ```
 
-To try the Figma export, put a personal access token into `.figma-token` (gitignored). In CI, the Figma example runs
-when a `FIGMA_TOKEN` repository secret is set.
+To try the Figma export, copy [`.env.example`](.env.example) to `.env.local` (gitignored) and set `FIGMA_TOKEN`. In CI,
+the Figma example runs when a `FIGMA_TOKEN` repository secret is set.
 
 <details>
 <summary><b>Repository layout</b></summary>

@@ -2,6 +2,6 @@
 node_modules/
 dist/
 .turbo/
-.figma-token
+.env*.local
 /packages/favicon-generator/bin/*/
 /dist-npm/
