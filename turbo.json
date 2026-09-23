@@ -23,12 +23,20 @@
     "example-nuxt#test": {
       "dependsOn": ["build"]
     },
+    // `nuxt prepare` and `nuxt generate` both write .nuxt; running them at the
+    // same time made vue-tsc see incomplete types.
+    "example-nuxt#typecheck": {
+      "dependsOn": ["build"]
+    },
     "example-nuxt-config-file#build": {
       "dependsOn": ["^build"],
       "env": ["NUXT_APP_BASE_URL"],
       "outputs": [".output/**"]
     },
     "example-nuxt-config-file#test": {
+      "dependsOn": ["build"]
+    },
+    "example-nuxt-config-file#typecheck": {
       "dependsOn": ["build"]
     },
     "typecheck": {
