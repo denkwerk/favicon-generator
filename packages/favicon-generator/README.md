@@ -1,4 +1,22 @@
-# @denkwerk/favicon-generator
+<p align="center">
+  <img src="https://raw.githubusercontent.com/denkwerk/favicon-generator/main/.github/assets/logo.svg" width="80" height="80" alt="">
+</p>
+
+<h1 align="center">@denkwerk/favicon-generator</h1>
+
+<p align="center">
+  One SVG in, every favicon out: icons for browsers, iOS, Android and Windows, a web app manifest<br>and ready-to-paste <code>&lt;head&gt;</code> tags, from an image file or a Figma component.
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@denkwerk/favicon-generator"><img src="https://img.shields.io/npm/v/@denkwerk/favicon-generator?color=02969c" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@denkwerk/favicon-generator"><img src="https://img.shields.io/npm/dm/@denkwerk/favicon-generator?color=02969c" alt="npm downloads"></a>
+  <a href="https://github.com/denkwerk/favicon-generator/blob/main/LICENSE"><img src="https://img.shields.io/github/license/denkwerk/favicon-generator?color=02969c" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <a href="#configuration">Configuration</a> · <a href="#options">Options</a> · <a href="#from-figma">Figma</a> · <a href="#programmatic-api">API</a> · <a href="#output">Output</a> · <a href="https://github.com/denkwerk/favicon-generator">Overview</a>
+</p>
 
 Generates a complete favicon set (PNG sizes, touch icons, `favicon.ico`, web app manifest,
 `browserconfig.xml` and ready-to-paste `<head>` tags) from one SVG, a raster image, or a
