@@ -6,10 +6,9 @@ use serde::{Deserialize, Serialize};
 /// Generate favicons, an Apple touch icon and head tags from a single SVG
 /// (recommended) or raster image, or from a Figma node.
 ///
-/// By default only what the image alone provides is generated: favicon.ico,
-/// favicon.svg, favicon-96x96.png, apple-touch-icon.png and favicon.html. A web
-/// app manifest, theme color, Windows tiles and legacy sizes are added when you
-/// configure them.
+/// Generates favicon.ico, favicon.svg, favicon-96x96.png, apple-touch-icon.png
+/// and favicon.html. Additionally, the options below add a web app manifest, a
+/// theme color, Windows tiles and legacy sizes.
 ///
 /// Options can also be set in a favicon.config.{js,ts,mjs,mts,cjs,cts,json}
 /// file, which is looked up in the current directory and its parents up to the

@@ -12,7 +12,7 @@ export interface AppleTouchIconOptions {
   background?: HexColor
 }
 
-/** Options of the web app manifest. Only the fields you set are written. */
+/** Options of the web app manifest, which contains exactly the fields you set. */
 export interface ManifestOptions {
   /** `name`, shown when installing the app. */
   name?: string
@@ -44,10 +44,10 @@ export interface WindowsOptions {
  * Options for favicon-generator. Every option has a CLI flag, and flags take
  * precedence. Relative paths are resolved against the config file's directory.
  *
- * Without options beyond `input` and `output`, only what the image provides is
- * generated: `favicon.ico`, `favicon.svg`, `favicon-96x96.png`,
- * `apple-touch-icon.png` and `favicon.html`. The groups below add more when set
- * to `true` or to their options, and `false` turns them off.
+ * With `input` and `output`, you get `favicon.ico`, `favicon.svg`,
+ * `favicon-96x96.png`, `apple-touch-icon.png` and `favicon.html`. Additionally,
+ * the groups below add a manifest, Windows tiles and more: set one to `true` for
+ * its defaults or to its options; `false` leaves it out.
  */
 export interface FaviconConfig {
   /** Path or URL of the JSON Schema, for editor support in `favicon.config.json`. */
@@ -67,11 +67,11 @@ export interface FaviconConfig {
   snippets?: Snippet[]
   /** Adds `<meta name="theme-color">` (and `theme_color` to the manifest). */
   themeColor?: HexColor
-  /** `apple-touch-icon.png`, 180×180 and opaque. On by default; `false` turns it off. */
+  /** `apple-touch-icon.png`, 180×180 and opaque. Included by default; `false` leaves it out. */
   appleTouchIcon?: boolean | AppleTouchIconOptions
-  /** A web app manifest (`manifest.json`) with 192 and 512 px icons. Off unless configured. */
+  /** Adds a web app manifest (`manifest.json`) with 192 and 512 px icons: `true` or its options. */
   manifest?: boolean | ManifestOptions
-  /** `browserconfig.xml` and tile images for pinned sites on Windows. Off unless configured. */
+  /** Adds `browserconfig.xml` and tile images for pinned sites on Windows: `true` or its options. */
   windows?: boolean | WindowsOptions
   /**
    * Also generate the sizes old browsers and devices look for: 19 PNG sizes,

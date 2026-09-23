@@ -56,7 +56,7 @@
       "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
     },
     "appleTouchIcon": {
-      "description": "`apple-touch-icon.png`, 180×180 and opaque. On by default; `false` turns it off.",
+      "description": "`apple-touch-icon.png`, 180×180 and opaque. Included by default; `false` leaves it out.",
       "anyOf": [
         {
           "$ref": "#/definitions/Toggle_AppleTouchIconConfig"
@@ -67,7 +67,7 @@
       ]
     },
     "manifest": {
-      "description": "A web app manifest (`manifest.json`) with 192 and 512 px icons. Off unless configured.",
+      "description": "Adds a web app manifest (`manifest.json`) with 192 and 512 px icons: `true` or its options.",
       "anyOf": [
         {
           "$ref": "#/definitions/Toggle_ManifestConfig"
@@ -78,7 +78,7 @@
       ]
     },
     "windows": {
-      "description": "`browserconfig.xml` and tile images for pinned sites on Windows. Off unless configured.",
+      "description": "Adds `browserconfig.xml` and tile images for pinned sites on Windows: `true` or its options.",
       "anyOf": [
         {
           "$ref": "#/definitions/Toggle_WindowsConfig"

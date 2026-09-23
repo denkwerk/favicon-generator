@@ -5,7 +5,7 @@
 <h1 align="center">@denkwerk/nuxt-favicon-generator</h1>
 
 <p align="center">
-  Favicons and an Apple touch icon for your Nuxt app, plus a manifest and theme color when you want them,<br>generated at build time from one SVG or a Figma component, served and linked for you.
+  A complete favicon set for your Nuxt app, and a manifest or theme color with one option each,<br>generated at build time from one SVG or a Figma component, served and linked for you.
 </p>
 
 <p align="center">
@@ -18,9 +18,9 @@
   <a href="#setup">Setup</a> · <a href="#config-file">Config file</a> · <a href="#from-figma">Figma</a> · <a href="#options">Options</a> · <a href="https://github.com/denkwerk/favicon-generator">Overview</a>
 </p>
 
-A Nuxt module that generates favicons and an Apple touch icon (and, when configured, a web app manifest, theme color
-and Windows tiles) from one SVG, a raster image or a Figma component, serves the files, and adds the matching
-`<link>` and `<meta>` tags to every page. It is built on [`@denkwerk/favicon-generator`](../favicon-generator).
+A Nuxt module that generates favicons and an Apple touch icon from one SVG, a raster image or a Figma component,
+serves the files, and adds the matching `<link>` and `<meta>` tags to every page. Additionally, it can add a web app
+manifest, a theme color and Windows tiles. It is built on [`@denkwerk/favicon-generator`](../favicon-generator).
 
 - Nothing is written to `public/`: the files are generated into `node_modules/.cache` at build time and served by Nitro.
 - Output is cached until the options or the source image change, so Figma is only called when something changed.
@@ -41,8 +41,8 @@ export default defineNuxtConfig({
 })
 ```
 
-That generates and links `favicon.ico`, `favicon.svg`, `favicon-96x96.png` and `apple-touch-icon.png`. Add more by
-configuring it:
+That generates and links `favicon.ico`, `favicon.svg`, `favicon-96x96.png` and `apple-touch-icon.png`. Additionally,
+you can add a theme color, a web app manifest and more:
 
 ```ts
 favicon: {

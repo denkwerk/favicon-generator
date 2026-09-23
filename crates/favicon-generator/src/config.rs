@@ -80,13 +80,13 @@ pub struct FileConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(test, schemars(schema_with = "color_schema"))]
     pub theme_color: Option<String>,
-    /// `apple-touch-icon.png`, 180×180 and opaque. On by default; `false` turns it off.
+    /// `apple-touch-icon.png`, 180×180 and opaque. Included by default; `false` leaves it out.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub apple_touch_icon: Option<Toggle<AppleTouchIconConfig>>,
-    /// A web app manifest (`manifest.json`) with 192 and 512 px icons. Off unless configured.
+    /// Adds a web app manifest (`manifest.json`) with 192 and 512 px icons: `true` or its options.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub manifest: Option<Toggle<ManifestConfig>>,
-    /// `browserconfig.xml` and tile images for pinned sites on Windows. Off unless configured.
+    /// Adds `browserconfig.xml` and tile images for pinned sites on Windows: `true` or its options.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub windows: Option<Toggle<WindowsConfig>>,
     /// Also generate the sizes old browsers and devices look for: 19 PNG sizes,
