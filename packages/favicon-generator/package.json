@@ -14,6 +14,7 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./schema.json": "./schema.json",
     "./package.json": "./package.json"
   },
   "bin": {
@@ -21,16 +22,20 @@
   },
   "files": [
     "bin",
-    "dist"
+    "dist",
+    "schema.json"
   ],
   "engines": {
     "node": ">=22.18"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc -p test"
   },
   "devDependencies": {
     "@types/node": "^24.13.6",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
   }
 }

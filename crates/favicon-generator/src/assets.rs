@@ -1,73 +1,85 @@
 //! Text assets: web app manifest, browserconfig.xml and head snippets.
 
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 
+use crate::config::Settings;
 use crate::spec::{
-    APPLE_TOUCH_LINK_SIZES, ICON_LINK_SIZES, MANIFEST_SIZES, TILE_IMAGE_SIZE, TILE_SIZES, png_name,
+    ICON_SIZE, LEGACY_APPLE_TOUCH_LINK_SIZES, LEGACY_ICON_LINK_SIZES, MANIFEST_SIZES,
+    TILE_IMAGE_SIZE, TILE_SIZES, maskable_name, png_name,
 };
 
-pub struct Config {
-    pub path_prefix: String,
-    pub name: String,
-    pub short_name: String,
-    pub description: String,
-    pub theme_color: String,
-    pub background_color: String,
-    pub tile_color: String,
-    pub start_url: String,
-    pub scope: String,
-    pub display: String,
-    pub icon_purpose: String,
-    pub manifest_crossorigin: Option<String>,
+/// What the text assets describe: the settings, and whether the source was an SVG.
+pub struct Config<'a> {
+    pub settings: &'a Settings,
     pub has_svg: bool,
 }
 
-impl Config {
+impl Config<'_> {
     fn url(&self, file: &str) -> String {
-        format!("{}{file}", self.path_prefix)
+        format!("{}{file}", self.settings.path_prefix)
     }
 }
 
-pub fn manifest(cfg: &Config) -> String {
-    let icons: Vec<Value> = MANIFEST_SIZES
+/// `manifest.json` with the configured fields; `None` if the manifest is off.
+pub fn manifest(cfg: &Config) -> Option<String> {
+    let manifest = cfg.settings.manifest.as_ref()?;
+    let mut icons: Vec<Value> = MANIFEST_SIZES
         .iter()
         .map(|&size| {
             json!({
                 "src": cfg.url(&png_name(size)),
                 "type": "image/png",
                 "sizes": format!("{size}x{size}"),
-                "purpose": cfg.icon_purpose,
             })
         })
         .collect();
+    if manifest.maskable {
+        icons.extend(MANIFEST_SIZES.iter().map(|&size| {
+            json!({
+                "src": cfg.url(&maskable_name(size)),
+                "type": "image/png",
+                "sizes": format!("{size}x{size}"),
+                "purpose": "maskable",
+            })
+        }));
+    }
 
-    let manifest = json!({
-        "name": cfg.name,
-        "description": cfg.description,
-        "short_name": cfg.short_name,
-        "icons": icons,
-        "scope": cfg.scope,
-        "start_url": cfg.start_url,
-        "display": cfg.display,
-        "theme_color": cfg.theme_color,
-        "background_color": cfg.background_color,
-    });
-    serde_json::to_string_pretty(&manifest).expect("manifest serializes") + "\n"
+    let mut object = Map::new();
+    let mut set = |key: &str, value: Option<&str>| {
+        if let Some(value) = value {
+            object.insert(key.to_owned(), Value::String(value.to_owned()));
+        }
+    };
+    set("name", manifest.name.as_deref());
+    set("short_name", manifest.short_name.as_deref());
+    set("description", manifest.description.as_deref());
+    set("start_url", manifest.start_url.as_deref());
+    set("scope", manifest.scope.as_deref());
+    set("display", manifest.display.map(|d| d.as_str()));
+    set("theme_color", cfg.settings.theme_color.as_deref());
+    set("background_color", manifest.background_color.as_deref());
+    object.insert("icons".into(), Value::Array(icons));
+
+    Some(serde_json::to_string_pretty(&Value::Object(object)).expect("manifest serializes") + "\n")
 }
 
-pub fn browserconfig(cfg: &Config) -> String {
+/// `browserconfig.xml`; `None` if Windows tiles are off.
+pub fn browserconfig(cfg: &Config) -> Option<String> {
+    let windows = cfg.settings.windows.as_ref()?;
     let mut xml = String::from(
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<browserconfig>\n\t<msapplication>\n\t\t<tile>\n",
     );
-    for size in TILE_SIZES {
+    for &size in TILE_SIZES {
         xml += &format!(
             "\t\t\t<square{size}x{size}logo src=\"{}\"/>\n",
             escape(&cfg.url(&png_name(size)))
         );
     }
-    xml += &format!("\t\t\t<TileColor>{}</TileColor>\n", escape(&cfg.tile_color));
+    if let Some(color) = &windows.tile_color {
+        xml += &format!("\t\t\t<TileColor>{}</TileColor>\n", escape(color));
+    }
     xml += "\t\t</tile>\n\t</msapplication>\n</browserconfig>\n";
-    xml
+    Some(xml)
 }
 
 enum TagKind {
@@ -94,21 +106,15 @@ fn meta(name: &str, content: String) -> Tag {
     }
 }
 
-/// All `<head>` tags, shared by the HTML and Nuxt snippets.
+/// All `<head>` tags, shared by the HTML, JSON and Nuxt snippets.
 fn head_tags(cfg: &Config) -> Vec<Tag> {
+    let settings = cfg.settings;
+    // `sizes="32x32"` keeps browsers that support SVG favicons from preferring the .ico.
     let mut tags = vec![link(vec![
-        ("rel", "apple-touch-icon".into()),
-        ("href", cfg.url("apple-touch-icon.png")),
+        ("rel", "icon".into()),
+        ("href", cfg.url("favicon.ico")),
+        ("sizes", "32x32".into()),
     ])];
-
-    for size in APPLE_TOUCH_LINK_SIZES {
-        tags.push(link(vec![
-            ("rel", "apple-touch-icon".into()),
-            ("sizes", format!("{size}x{size}")),
-            ("href", cfg.url(&png_name(size))),
-        ]));
-    }
-
     if cfg.has_svg {
         tags.push(link(vec![
             ("rel", "icon".into()),
@@ -116,8 +122,12 @@ fn head_tags(cfg: &Config) -> Vec<Tag> {
             ("href", cfg.url("favicon.svg")),
         ]));
     }
-
-    for size in ICON_LINK_SIZES {
+    let icon_sizes: &[u32] = if settings.legacy {
+        LEGACY_ICON_LINK_SIZES
+    } else {
+        &[ICON_SIZE]
+    };
+    for &size in icon_sizes {
         tags.push(link(vec![
             ("rel", "icon".into()),
             ("type", "image/png".into()),
@@ -125,29 +135,52 @@ fn head_tags(cfg: &Config) -> Vec<Tag> {
             ("href", cfg.url(&png_name(size))),
         ]));
     }
-
-    for rel in ["shortcut icon", "icon"] {
+    if settings.legacy {
         tags.push(link(vec![
-            ("rel", rel.into()),
-            ("type", "image/x-icon".into()),
+            ("rel", "shortcut icon".into()),
             ("href", cfg.url("favicon.ico")),
         ]));
     }
 
-    let mut manifest = vec![("rel", "manifest".into())];
-    if let Some(crossorigin) = &cfg.manifest_crossorigin {
-        manifest.push(("crossorigin", crossorigin.clone()));
+    if settings.apple_touch_icon.is_some() {
+        tags.push(link(vec![
+            ("rel", "apple-touch-icon".into()),
+            ("href", cfg.url("apple-touch-icon.png")),
+        ]));
+        if settings.legacy {
+            for &size in LEGACY_APPLE_TOUCH_LINK_SIZES {
+                tags.push(link(vec![
+                    ("rel", "apple-touch-icon".into()),
+                    ("sizes", format!("{size}x{size}")),
+                    ("href", cfg.url(&png_name(size))),
+                ]));
+            }
+        }
     }
-    manifest.push(("href", cfg.url("manifest.json")));
-    tags.push(link(manifest));
 
-    tags.push(meta("msapplication-TileColor", cfg.tile_color.clone()));
-    tags.push(meta(
-        "msapplication-TileImage",
-        cfg.url(&png_name(TILE_IMAGE_SIZE)),
-    ));
-    tags.push(meta("msapplication-config", cfg.url("browserconfig.xml")));
-    tags.push(meta("theme-color", cfg.theme_color.clone()));
+    if let Some(manifest) = &settings.manifest {
+        let mut attrs = vec![("rel", "manifest".into())];
+        if let Some(crossorigin) = &manifest.crossorigin {
+            attrs.push(("crossorigin", crossorigin.clone()));
+        }
+        attrs.push(("href", cfg.url("manifest.json")));
+        tags.push(link(attrs));
+    }
+
+    if let Some(color) = &settings.theme_color {
+        tags.push(meta("theme-color", color.clone()));
+    }
+
+    if let Some(windows) = &settings.windows {
+        if let Some(color) = &windows.tile_color {
+            tags.push(meta("msapplication-TileColor", color.clone()));
+        }
+        tags.push(meta(
+            "msapplication-TileImage",
+            cfg.url(&png_name(TILE_IMAGE_SIZE)),
+        ));
+        tags.push(meta("msapplication-config", cfg.url("browserconfig.xml")));
+    }
     tags
 }
 

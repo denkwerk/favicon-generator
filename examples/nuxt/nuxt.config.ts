@@ -3,9 +3,8 @@ export default defineNuxtConfig({
 
   favicon: {
     input: './assets/favicon.svg',
-    appName: 'Favicon Generator Nuxt Example',
-    appShortName: 'Nuxt Example',
     themeColor: '#02969c',
+    manifest: { name: 'Favicon Generator Nuxt Example', shortName: 'Nuxt Example' },
   },
 
   compatibilityDate: '2026-09-01',

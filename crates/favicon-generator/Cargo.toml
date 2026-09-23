@@ -18,4 +18,6 @@ serde_json = { version = "1.0.151", features = ["preserve_order"] }
 ureq = "3.4.2"
 
 [dev-dependencies]
+insta = "1.48.0"
+schemars = "1.2.2"
 tempfile = "3.27.0"

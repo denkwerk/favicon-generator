@@ -1,0 +1,38 @@
+---
+source: crates/favicon-generator/tests/cli.rs
+expression: "project.read(\"out/manifest.json\")"
+---
+{
+  "name": "My App",
+  "short_name": "App",
+  "description": "An app",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#02969c",
+  "background_color": "#0b1f24",
+  "icons": [
+    {
+      "src": "/favicons/favicon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/favicons/favicon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/favicons/favicon-maskable-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicons/favicon-maskable-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ]
+}

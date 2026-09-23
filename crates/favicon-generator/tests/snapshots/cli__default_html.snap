@@ -1,0 +1,8 @@
+---
+source: crates/favicon-generator/tests/cli.rs
+expression: "project.read(\"out/favicon.html\")"
+---
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">

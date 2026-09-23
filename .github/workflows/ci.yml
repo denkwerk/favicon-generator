@@ -63,7 +63,7 @@ jobs:
       - name: Verify generated files
         shell: bash
         run: |
-          for file in favicon.ico favicon.svg favicon-512x512.png apple-touch-icon.png manifest.json browserconfig.xml favicon.html nuxt-head.ts; do
+          for file in favicon.ico favicon.svg favicon-96x96.png favicon-512x512.png apple-touch-icon.png manifest.json favicon.html; do
             test -s "examples/cli/public/favicons/$file" || { echo "missing $file"; exit 1; }
           done
           test -s examples/typescript/public/favicons/favicon.html

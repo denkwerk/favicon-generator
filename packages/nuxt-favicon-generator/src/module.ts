@@ -7,8 +7,9 @@ import { type FaviconConfig, generate, loadConfig } from '@denkwerk/favicon-gene
 import { defineNuxtModule, setGlobalHead, useLogger } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
 import { joinURL, withLeadingSlash, withTrailingSlash } from 'ufo'
+import { mergeOptions } from './options'
 
-export interface ModuleOptions extends Omit<FaviconConfig, 'output' | 'overwrite' | 'snippets' | 'pathPrefix'> {
+export interface ModuleOptions extends Omit<FaviconConfig, '$schema' | 'output' | 'overwrite' | 'snippets' | 'pathPrefix'> {
   /** Set to `false` to disable the module. @default true */
   enabled?: boolean
   /**
@@ -33,7 +34,7 @@ export interface ModuleOptions extends Omit<FaviconConfig, 'output' | 'overwrite
 }
 
 /** Options for the generator: everything except the module's own switches. */
-type GeneratorOptions = Omit<ModuleOptions, 'enabled' | 'head' | 'cache' | 'configFile'>
+export type GeneratorOptions = Omit<ModuleOptions, 'enabled' | 'head' | 'cache' | 'configFile'>
 
 const NAME = '@denkwerk/nuxt-favicon-generator'
 const require = createRequire(import.meta.url)
@@ -156,17 +157,6 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 })
 
 export default module
-
-/**
- * Inline module options take precedence over the config file, like CLI flags
- * do. The module decides where the files go, so the file's output settings
- * are dropped.
- */
-function mergeOptions(fromFile: FaviconConfig, inline: GeneratorOptions): GeneratorOptions {
-  const { output: _output, overwrite: _overwrite, snippets: _snippets, ...rest } = fromFile
-  const defined = Object.fromEntries(Object.entries(inline).filter(([, value]) => value !== undefined))
-  return { ...rest, ...defined }
-}
 
 /** Warns when files in `public/` would compete with the generated ones. */
 function warnAboutShadowedFiles(publicDir: string, routePrefix: string, logger: ReturnType<typeof useLogger>) {

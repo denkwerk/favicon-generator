@@ -6,12 +6,52 @@ export type Display = 'fullscreen' | 'standalone' | 'minimal-ui' | 'browser'
 /** `#rgb` or `#rrggbb`; validated when the favicons are generated. */
 export type HexColor = string
 
+/** Options of the Apple touch icon. */
+export interface AppleTouchIconOptions {
+  /** Color behind transparent pixels; iOS shows them black. @default '#ffffff' */
+  background?: HexColor
+}
+
+/** Options of the web app manifest. Only the fields you set are written. */
+export interface ManifestOptions {
+  /** `name`, shown when installing the app. */
+  name?: string
+  /** `short_name`, shown on the home screen. */
+  shortName?: string
+  /** `description`. */
+  description?: string
+  /** `background_color` of the splash screen; also behind maskable icons. */
+  backgroundColor?: HexColor
+  /** `start_url`. */
+  startUrl?: string
+  /** `scope`. */
+  scope?: string
+  /** `display` mode. */
+  display?: Display
+  /** Add maskable icons (the image at 60% on `backgroundColor`) for Android. @default false */
+  maskable?: boolean
+  /** `crossorigin` attribute for the manifest `<link>`, e.g. `use-credentials`. */
+  crossorigin?: string
+}
+
+/** Options of the Windows tiles. */
+export interface WindowsOptions {
+  /** Tile color (`msapplication-TileColor`). */
+  tileColor?: HexColor
+}
+
 /**
- * Options for favicon-generator. Every option mirrors a CLI flag; flags passed
- * on the command line take precedence. Relative paths are resolved against the
- * directory of the config file.
+ * Options for favicon-generator. Every option has a CLI flag, and flags take
+ * precedence. Relative paths are resolved against the config file's directory.
+ *
+ * Without options beyond `input` and `output`, only what the image provides is
+ * generated: `favicon.ico`, `favicon.svg`, `favicon-96x96.png`,
+ * `apple-touch-icon.png` and `favicon.html`. The groups below add more when set
+ * to `true` or to their options, and `false` turns them off.
  */
 export interface FaviconConfig {
+  /** Path or URL of the JSON Schema, for editor support in `favicon.config.json`. */
+  $schema?: string
   /**
    * Source image (SVG, PNG, JPEG or WebP; should be square), or a Figma link
    * with a `node-id`, which is exported as SVG through the Figma REST API.
@@ -21,33 +61,23 @@ export interface FaviconConfig {
   output?: string
   /** Overwrite existing files in the output directory. @default false */
   overwrite?: boolean
-  /** URL prefix the files will be served from, e.g. `/public/`. @default '/' */
+  /** URL prefix the files will be served from, e.g. `/favicons/`. @default '/' */
   pathPrefix?: string
-  /** Application name used in manifest.json. @default 'App' */
-  appName?: string
-  /** Short application name. @default appName */
-  appShortName?: string
-  /** Application description. @default appName */
-  appDescription?: string
-  /** Browser UI color (`theme-color`, manifest `theme_color`). @default '#ffffff' */
+  /** Head snippets to write next to the icons; `[]` writes none. @default ['html'] */
+  snippets?: Snippet[]
+  /** Adds `<meta name="theme-color">` (and `theme_color` to the manifest). */
   themeColor?: HexColor
+  /** `apple-touch-icon.png`, 180×180 and opaque. On by default; `false` turns it off. */
+  appleTouchIcon?: boolean | AppleTouchIconOptions
+  /** A web app manifest (`manifest.json`) with 192 and 512 px icons. Off unless configured. */
+  manifest?: boolean | ManifestOptions
+  /** `browserconfig.xml` and tile images for pinned sites on Windows. Off unless configured. */
+  windows?: boolean | WindowsOptions
   /**
-   * Splash screen color (manifest `background_color`); also fills transparent
-   * pixels in the opaque apple-touch-icon*.png files. @default '#ffffff'
+   * Also generate the sizes old browsers and devices look for: 19 PNG sizes,
+   * sized Apple touch icons and a 7-frame `favicon.ico`. @default false
    */
-  backgroundColor?: HexColor
-  /** Windows tile color. @default backgroundColor */
-  tileColor?: HexColor
-  /** Manifest `start_url`. @default '/?source=pwa' */
-  startUrl?: string
-  /** Manifest `scope`. @default '/' */
-  scope?: string
-  /** Manifest `display` mode. @default 'standalone' */
-  display?: Display
-  /** Manifest icon `purpose`. @default 'any maskable' */
-  iconPurpose?: string
-  /** `crossorigin` attribute for the manifest `<link>`, e.g. `use-credentials`. */
-  manifestCrossorigin?: string
+  legacy?: boolean
   /**
    * Figma personal access token (scope `file_content:read`). Prefer the
    * `FIGMA_TOKEN` env var or `figmaTokenFile` over committing a token.
@@ -55,8 +85,6 @@ export interface FaviconConfig {
   figmaToken?: string
   /** File containing the Figma personal access token. */
   figmaTokenFile?: string
-  /** Head snippets to write next to the icons; `[]` writes none. @default ['html', 'nuxt'] */
-  snippets?: Snippet[]
 }
 
 export type UserConfig = FaviconConfig | (() => FaviconConfig | Promise<FaviconConfig>)

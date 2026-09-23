@@ -1,0 +1,287 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "favicon-generator config",
+  "description": "The contents of a config file. Top-level fields mirror the output flags;\noptional outputs are grouped, and each group can be `true` (defaults),\n`false` (off) or an object with its options (on).",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "Path or URL of this JSON Schema, for editor support.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "writeOnly": true
+    },
+    "input": {
+      "description": "Source image (SVG, PNG, JPEG or WebP; should be square), or a Figma link\nwith a `node-id`, which is exported as SVG through the Figma REST API.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "output": {
+      "description": "Directory to write the generated files into. Default: `favicons`.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "overwrite": {
+      "description": "Overwrite existing files in the output directory. Default: `false`.",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "pathPrefix": {
+      "description": "URL prefix the files will be served from, e.g. `/favicons/`. Default: `/`.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "snippets": {
+      "description": "Head snippets to write next to the icons; `[]` writes none. Default: `[\"html\"]`.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/Snippet"
+      }
+    },
+    "themeColor": {
+      "description": "Adds `<meta name=\"theme-color\">` (and `theme_color` to the manifest).",
+      "type": "string",
+      "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+    },
+    "appleTouchIcon": {
+      "description": "`apple-touch-icon.png`, 180×180 and opaque. On by default; `false` turns it off.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Toggle_AppleTouchIconConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "manifest": {
+      "description": "A web app manifest (`manifest.json`) with 192 and 512 px icons. Off unless configured.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Toggle_ManifestConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "windows": {
+      "description": "`browserconfig.xml` and tile images for pinned sites on Windows. Off unless configured.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Toggle_WindowsConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "legacy": {
+      "description": "Also generate the sizes old browsers and devices look for: 19 PNG sizes,\nsized Apple touch icons and a 7-frame `favicon.ico`. Default: `false`.",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "figmaToken": {
+      "description": "Figma personal access token (scope `file_content:read`). Prefer the\n`FIGMA_TOKEN` env var or `figmaTokenFile` over committing a token.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "figmaTokenFile": {
+      "description": "File containing the Figma personal access token.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "themeColor"
+  ],
+  "definitions": {
+    "Snippet": {
+      "oneOf": [
+        {
+          "description": "favicon.html with <link>/<meta> tags.",
+          "type": "string",
+          "const": "html"
+        },
+        {
+          "description": "nuxt-head.ts exporting `faviconHead` for `app.head`.",
+          "type": "string",
+          "const": "nuxt"
+        },
+        {
+          "description": "favicon-head.json with the tags as `{ link: [...], meta: [...] }`.",
+          "type": "string",
+          "const": "json"
+        },
+        {
+          "description": "Write no snippets.",
+          "type": "string",
+          "const": "none"
+        }
+      ]
+    },
+    "Toggle_AppleTouchIconConfig": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/definitions/AppleTouchIconConfig"
+        }
+      ]
+    },
+    "AppleTouchIconConfig": {
+      "description": "Options of the Apple touch icon.",
+      "type": "object",
+      "properties": {
+        "background": {
+          "description": "Color behind transparent pixels; iOS shows them black. Default: `#ffffff`.",
+          "type": "string",
+          "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "background"
+      ]
+    },
+    "Toggle_ManifestConfig": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/definitions/ManifestConfig"
+        }
+      ]
+    },
+    "ManifestConfig": {
+      "description": "Options of the web app manifest. Only the fields you set are written.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "`name`, shown when installing the app.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "shortName": {
+          "description": "`short_name`, shown on the home screen.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "description": "`description`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "backgroundColor": {
+          "description": "`background_color` of the splash screen; also behind maskable icons.",
+          "type": "string",
+          "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+        },
+        "startUrl": {
+          "description": "`start_url`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "description": "`scope`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "display": {
+          "description": "`display` mode.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Display"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "maskable": {
+          "description": "Add maskable icons (the image at 60% on `backgroundColor`) for Android. Default: `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "crossorigin": {
+          "description": "`crossorigin` attribute for the manifest `<link>`, e.g. `use-credentials`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "backgroundColor"
+      ]
+    },
+    "Display": {
+      "type": "string",
+      "enum": [
+        "fullscreen",
+        "standalone",
+        "minimal-ui",
+        "browser"
+      ]
+    },
+    "Toggle_WindowsConfig": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/definitions/WindowsConfig"
+        }
+      ]
+    },
+    "WindowsConfig": {
+      "description": "Options of the Windows tiles.",
+      "type": "object",
+      "properties": {
+        "tileColor": {
+          "description": "Tile color (`msapplication-TileColor`).",
+          "type": "string",
+          "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "tileColor"
+      ]
+    }
+  }
+}

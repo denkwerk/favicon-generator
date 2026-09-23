@@ -15,7 +15,6 @@ export default defineConfig({
   output: './public/favicons',
   overwrite: true,
   pathPrefix: '/favicons/',
-  appName: 'Favicon Generator Figma Example',
-  appShortName: 'Figma Example',
   themeColor: '#02969c',
+  manifest: { name: 'Favicon Generator Figma Example', shortName: 'Figma Example' },
 })

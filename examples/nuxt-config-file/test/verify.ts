@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs'
 const output = new URL('../.output/public/', import.meta.url)
 const failures: string[] = []
 
-for (const file of ['favicon.ico', 'favicon.svg', 'favicon-192x192.png', 'apple-touch-icon.png', 'manifest.json', 'browserconfig.xml']) {
+for (const file of ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'favicon-192x192.png', 'apple-touch-icon.png', 'manifest.json']) {
   if (!existsSync(new URL(file, output))) {
     failures.push(`missing ${file}`)
   }

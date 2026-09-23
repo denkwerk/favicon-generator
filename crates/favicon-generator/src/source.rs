@@ -114,3 +114,16 @@ pub fn flatten(image: &RgbaImage, background: [u8; 3]) -> RgbImage {
         }))
     })
 }
+
+/// Places `image` in the middle of an opaque `size`×`size` square, for maskable
+/// icons whose edges Android may cut away.
+pub fn pad(image: &RgbaImage, size: u32, background: [u8; 3]) -> RgbImage {
+    let mut canvas = RgbaImage::from_pixel(
+        size,
+        size,
+        image::Rgba([background[0], background[1], background[2], 255]),
+    );
+    let offset = ((size - image.width().min(size)) / 2).into();
+    image::imageops::overlay(&mut canvas, image, offset, offset);
+    flatten(&canvas, background)
+}

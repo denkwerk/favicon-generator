@@ -9,6 +9,9 @@ use serde_json::Value;
 
 const API_BASE: &str = "https://api.figma.com/v1";
 
+/// Overrides [`API_BASE`]; used by the tests to talk to a local mock server.
+const API_BASE_ENV: &str = "FAVICON_GENERATOR_FIGMA_API";
+
 /// A node inside a Figma file, parsed from a share link.
 #[derive(Debug, PartialEq)]
 pub struct NodeRef {
@@ -81,8 +84,9 @@ pub fn fetch_svg(node: &NodeRef, token: &str) -> Result<Vec<u8>> {
         .into();
 
     // Step 1: ask Figma to render the node; it answers with a short-lived download URL.
+    let api_base = std::env::var(API_BASE_ENV).unwrap_or_else(|_| API_BASE.to_owned());
     let mut response = agent
-        .get(format!("{API_BASE}/images/{}", node.file_key))
+        .get(format!("{api_base}/images/{}", node.file_key))
         .header("X-Figma-Token", token)
         .query("ids", &node.node_id)
         .query("format", "svg")

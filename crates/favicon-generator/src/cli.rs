@@ -3,8 +3,13 @@ use std::path::PathBuf;
 use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
 
-/// Generate favicons, touch icons, a web app manifest and browserconfig.xml
-/// from a single SVG (recommended) or raster image, or from a Figma node.
+/// Generate favicons, an Apple touch icon and head tags from a single SVG
+/// (recommended) or raster image, or from a Figma node.
+///
+/// By default only what the image alone provides is generated: favicon.ico,
+/// favicon.svg, favicon-96x96.png, apple-touch-icon.png and favicon.html. A web
+/// app manifest, theme color, Windows tiles and legacy sizes are added when you
+/// configure them.
 ///
 /// Options can also be set in a favicon.config.{js,ts,mjs,mts,cjs,cts,json}
 /// file, which is looked up in the current directory and its parents up to the
@@ -23,12 +28,24 @@ pub struct Cli {
 
     /// Source image (SVG, PNG, JPEG or WebP; should be square), or a Figma
     /// link with a `node-id` to export that node as SVG via the REST API.
-    #[arg(short, long)]
+    #[arg(short, long, help_heading = "Output")]
     pub input: Option<String>,
 
     /// Directory to write the generated files into [default: favicons].
-    #[arg(short, long)]
+    #[arg(short, long, help_heading = "Output")]
     pub output: Option<PathBuf>,
+
+    /// URL prefix the files will be served from, e.g. `/favicons/` [default: /].
+    #[arg(short = 'p', long, help_heading = "Output")]
+    pub path_prefix: Option<String>,
+
+    /// Overwrite existing files in the output directory.
+    #[arg(short = 'y', long, help_heading = "Output")]
+    pub overwrite: bool,
+
+    /// Head snippets to write next to the icons [default: html].
+    #[arg(long, value_enum, value_delimiter = ',', help_heading = "Output")]
+    pub snippets: Option<Vec<Snippet>>,
 
     /// Config file to use instead of searching for one; `-` reads JSON from stdin.
     #[arg(short, long, conflicts_with = "no_config")]
@@ -43,73 +60,115 @@ pub struct Cli {
     #[arg(long, conflicts_with = "no_config")]
     pub print_config: bool,
 
-    /// Overwrite existing files in the output directory.
-    #[arg(short = 'y', long)]
-    pub overwrite: bool,
-
-    /// URL prefix the files will be served from, e.g. `/public/` [default: /].
-    #[arg(short = 'p', long)]
-    pub path_prefix: Option<String>,
-
-    /// Application name used in manifest.json [default: App].
-    #[arg(short = 'n', long)]
-    pub app_name: Option<String>,
-
-    /// Short application name [default: --app-name].
-    #[arg(long)]
-    pub app_short_name: Option<String>,
-
-    /// Application description [default: --app-name].
-    #[arg(long)]
-    pub app_description: Option<String>,
-
-    /// Browser UI color (`theme-color`, manifest `theme_color`) [default: #ffffff].
-    #[arg(long, value_parser = parse_color)]
+    /// Adds `<meta name="theme-color">` (and `theme_color` to the manifest).
+    #[arg(long, value_parser = parse_color, help_heading = "Theme color")]
     pub theme_color: Option<String>,
 
-    /// Splash screen color (manifest `background_color`); also used behind
-    /// transparent pixels in the opaque apple-touch-icon*.png files [default: #ffffff].
-    #[arg(long, value_parser = parse_color)]
+    /// Generate apple-touch-icon.png (on by default).
+    #[arg(
+        long,
+        overrides_with = "no_apple_touch_icon",
+        help_heading = "Apple touch icon"
+    )]
+    pub apple_touch_icon: bool,
+
+    /// Do not generate apple-touch-icon.png.
+    #[arg(
+        long,
+        overrides_with = "apple_touch_icon",
+        help_heading = "Apple touch icon"
+    )]
+    pub no_apple_touch_icon: bool,
+
+    /// Color behind transparent pixels; iOS shows them black [default: #ffffff].
+    #[arg(long, value_parser = parse_color, help_heading = "Apple touch icon")]
+    pub apple_touch_background: Option<String>,
+
+    /// Generate a web app manifest (implied by any manifest option).
+    #[arg(
+        long,
+        overrides_with = "no_manifest",
+        help_heading = "Web app manifest"
+    )]
+    pub manifest: bool,
+
+    /// Do not generate a web app manifest, even if the config file enables it.
+    #[arg(long, overrides_with = "manifest", help_heading = "Web app manifest")]
+    pub no_manifest: bool,
+
+    /// Manifest `name`, shown when installing the app.
+    #[arg(short = 'n', long, help_heading = "Web app manifest")]
+    pub name: Option<String>,
+
+    /// Manifest `short_name`, shown on the home screen.
+    #[arg(long, help_heading = "Web app manifest")]
+    pub short_name: Option<String>,
+
+    /// Manifest `description`.
+    #[arg(long, help_heading = "Web app manifest")]
+    pub description: Option<String>,
+
+    /// Manifest `background_color` (splash screen); also behind maskable icons.
+    #[arg(long, value_parser = parse_color, help_heading = "Web app manifest")]
     pub background_color: Option<String>,
 
-    /// Windows tile color [default: --background-color].
-    #[arg(long, value_parser = parse_color)]
-    pub tile_color: Option<String>,
-
-    /// Manifest `start_url` [default: /?source=pwa].
-    #[arg(long)]
+    /// Manifest `start_url`.
+    #[arg(long, help_heading = "Web app manifest")]
     pub start_url: Option<String>,
 
-    /// Manifest `scope` [default: /].
-    #[arg(long)]
+    /// Manifest `scope`.
+    #[arg(long, help_heading = "Web app manifest")]
     pub scope: Option<String>,
 
-    /// Manifest `display` mode [default: standalone].
-    #[arg(long, value_enum)]
+    /// Manifest `display` mode.
+    #[arg(long, value_enum, help_heading = "Web app manifest")]
     pub display: Option<Display>,
 
-    /// Manifest icon `purpose` [default: "any maskable"].
-    #[arg(long)]
-    pub icon_purpose: Option<String>,
+    /// Add maskable icons (the image at 60% on `background_color`) for Android.
+    #[arg(long, help_heading = "Web app manifest")]
+    pub maskable: bool,
 
-    /// `crossorigin` attribute for the manifest <link>, e.g. `use-credentials`.
-    #[arg(long)]
+    /// `crossorigin` attribute for the manifest `<link>`, e.g. `use-credentials`.
+    #[arg(long, help_heading = "Web app manifest")]
     pub manifest_crossorigin: Option<String>,
 
+    /// Generate browserconfig.xml and tile images (implied by --tile-color).
+    #[arg(long, overrides_with = "no_windows", help_heading = "Windows tiles")]
+    pub windows: bool,
+
+    /// Do not generate Windows tiles, even if the config file enables them.
+    #[arg(long, overrides_with = "windows", help_heading = "Windows tiles")]
+    pub no_windows: bool,
+
+    /// Tile color (`msapplication-TileColor`).
+    #[arg(long, value_parser = parse_color, help_heading = "Windows tiles")]
+    pub tile_color: Option<String>,
+
+    /// Also generate the sizes old browsers and devices look for: 19 PNG
+    /// sizes, sized Apple touch icons and a 7-frame favicon.ico.
+    #[arg(long, overrides_with = "no_legacy", help_heading = "Legacy")]
+    pub legacy: bool,
+
+    /// Do not generate legacy sizes, even if the config file enables them.
+    #[arg(long, overrides_with = "legacy", help_heading = "Legacy")]
+    pub no_legacy: bool,
+
     /// Figma personal access token (scope `file_content:read`), used when the input is a Figma link.
-    #[arg(long, env = "FIGMA_TOKEN", hide_env_values = true)]
+    #[arg(
+        long,
+        env = "FIGMA_TOKEN",
+        hide_env_values = true,
+        help_heading = "Figma"
+    )]
     pub figma_token: Option<String>,
 
     /// Read the Figma token from this file instead.
-    #[arg(long, env = "FIGMA_TOKEN_FILE")]
+    #[arg(long, env = "FIGMA_TOKEN_FILE", help_heading = "Figma")]
     pub figma_token_file: Option<PathBuf>,
-
-    /// Head snippets to write next to the icons [default: html,nuxt].
-    #[arg(long, value_enum, value_delimiter = ',')]
-    pub snippets: Option<Vec<Snippet>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, ValueEnum, Deserialize, Serialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum Display {
     Fullscreen,
@@ -130,6 +189,7 @@ impl Display {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, ValueEnum, Deserialize, Serialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum Snippet {
     /// favicon.html with <link>/<meta> tags.

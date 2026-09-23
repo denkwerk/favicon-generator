@@ -11,6 +11,9 @@
       "dependsOn": ["favicon-generator#build"],
       "outputs": ["dist/**"]
     },
+    "@denkwerk/favicon-generator#test": {
+      "dependsOn": ["favicon-generator#build"]
+    },
     "@denkwerk/nuxt-favicon-generator#build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
