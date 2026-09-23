@@ -5,7 +5,7 @@
 <h1 align="center">@denkwerk/nuxt-favicon-generator</h1>
 
 <p align="center">
-  Favicons, touch icons and a web app manifest for your Nuxt app,<br>generated at build time from one SVG or a Figma component, served and linked for you.
+  Favicons and an Apple touch icon for your Nuxt app, plus a manifest and theme color when you want them,<br>generated at build time from one SVG or a Figma component, served and linked for you.
 </p>
 
 <p align="center">
@@ -18,8 +18,8 @@
   <a href="#setup">Setup</a> · <a href="#config-file">Config file</a> · <a href="#from-figma">Figma</a> · <a href="#options">Options</a> · <a href="https://github.com/denkwerk/favicon-generator">Overview</a>
 </p>
 
-A Nuxt module that generates a complete favicon set (PNG sizes, touch icons, `favicon.ico`, web app manifest and
-`browserconfig.xml`) from one SVG, a raster image or a Figma component, serves the files, and adds the matching
+A Nuxt module that generates favicons and an Apple touch icon (and, when configured, a web app manifest, theme color
+and Windows tiles) from one SVG, a raster image or a Figma component, serves the files, and adds the matching
 `<link>` and `<meta>` tags to every page. It is built on [`@denkwerk/favicon-generator`](../favicon-generator).
 
 - Nothing is written to `public/`: the files are generated into `node_modules/.cache` at build time and served by Nitro.
@@ -37,12 +37,19 @@ npx nuxt module add @denkwerk/nuxt-favicon-generator
 // nuxt.config.ts
 export default defineNuxtConfig({
   modules: ['@denkwerk/nuxt-favicon-generator'],
-  favicon: {
-    input: './assets/favicon.svg',
-    appName: 'My App',
-    themeColor: '#02969c',
-  },
+  favicon: { input: './assets/favicon.svg' },
 })
+```
+
+That generates and links `favicon.ico`, `favicon.svg`, `favicon-96x96.png` and `apple-touch-icon.png`. Add more by
+configuring it:
+
+```ts
+favicon: {
+  input: './assets/favicon.svg',
+  themeColor: '#02969c',
+  manifest: { name: 'My App', shortName: 'App', display: 'standalone' },
+},
 ```
 
 Remove any `favicon.ico` or other icons from `public/`, because they would conflict with the generated ones. The module warns about this.
@@ -58,14 +65,15 @@ import { defineConfig } from '@denkwerk/favicon-generator'
 
 export default defineConfig({
   input: './assets/favicon.svg',
-  appName: 'My App',
   themeColor: '#02969c',
+  manifest: { name: 'My App' },
 })
 ```
 
 The lookup rules are the CLI's, starting in the Nuxt `rootDir`. The module uses the first of
 `favicon.config.{js,ts,mjs,mts,cjs,cts,json}` it finds, then checks parent directories up to the nearest one with a
-`package.json` or `.git`. Options in `nuxt.config.ts` take precedence over the file. The file's `output`,
+`package.json` or `.git`. Options in `nuxt.config.ts` take precedence over the file; groups are merged key by key, so
+the file can set `manifest.name` and `nuxt.config.ts` `manifest.shortName`. The file's `output`,
 `overwrite` and `snippets` are ignored because the module decides where files go, and its `pathPrefix` is relative to
 `app.baseURL`. `favicon.config.ts` is type-checked with `nuxt.config.ts`, and in `nuxt dev` editing it restarts Nuxt.
 Add `@denkwerk/favicon-generator` to your dependencies so the file can import `defineConfig`.
@@ -74,9 +82,8 @@ Add `@denkwerk/favicon-generator` to your dependencies so the file can import `d
 
 ```ts
 favicon: {
-  input: 'https://www.figma.com/design/77SgSAGXbDv1Eye6htYdCG/ONE---Assets-Library-NEW?node-id=19938-42',
-  // Token from FIGMA_TOKEN, or:
-  figmaTokenFile: '.figma-token',
+  input: 'https://www.figma.com/design/<file-key>/<file-name>?node-id=19938-42',
+  // The token comes from FIGMA_TOKEN, e.g. in .env, or a gitignored figmaTokenFile.
 },
 ```
 
@@ -86,8 +93,8 @@ scope, which is read from the `FIGMA_TOKEN` env var or `figmaTokenFile`. Keep th
 ## Options
 
 Besides these module options, every [`@denkwerk/favicon-generator` option](../favicon-generator#options) except
-`output`, `overwrite` and `snippets` is supported (`appName`, `themeColor`, `backgroundColor`, `manifestCrossorigin`, …).
-Relative paths are resolved against the Nuxt `rootDir`.
+`output`, `overwrite` and `snippets` is supported: `themeColor`, `appleTouchIcon`, `manifest`, `windows`, `legacy` and
+the Figma token. Relative paths are resolved against the Nuxt `rootDir`.
 
 | Option | Default | |
 | --- | --- | --- |

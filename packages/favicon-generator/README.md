@@ -5,7 +5,7 @@
 <h1 align="center">@denkwerk/favicon-generator</h1>
 
 <p align="center">
-  One SVG in, every favicon out: icons for browsers, iOS, Android and Windows, a web app manifest<br>and ready-to-paste <code>&lt;head&gt;</code> tags, from an image file or a Figma component.
+  One SVG in, every favicon out: favicons, an Apple touch icon and ready-to-paste <code>&lt;head&gt;</code> tags,<br>plus a web app manifest, theme color and Windows tiles when you want them.
 </p>
 
 <p align="center">
@@ -15,35 +15,26 @@
 </p>
 
 <p align="center">
-  <a href="#usage">Usage</a> · <a href="#configuration">Configuration</a> · <a href="#options">Options</a> · <a href="#from-figma">Figma</a> · <a href="#programmatic-api">API</a> · <a href="#output">Output</a> · <a href="https://github.com/denkwerk/favicon-generator">Overview</a>
+  <a href="#usage">Usage</a> · <a href="#what-you-get">What you get</a> · <a href="#configuration">Configuration</a> · <a href="#options">Options</a> · <a href="#figma">Figma</a> · <a href="#nodejs-api">API</a> · <a href="https://github.com/denkwerk/favicon-generator">Overview</a>
 </p>
 
-Generates a complete favicon set (PNG sizes, touch icons, `favicon.ico`, web app manifest,
-`browserconfig.xml` and ready-to-paste `<head>` tags) from one SVG, a raster image, or a
-Figma component. The work is done by a native Rust binary; the package ships the prebuilt binaries
-for all supported platforms and picks the right one at runtime.
+Generates favicons, an Apple touch icon and `<head>` tags from one SVG, a raster image or a Figma component, and a web
+app manifest, theme color and Windows tiles when you configure them. The work is done by a native Rust binary; the
+package ships prebuilt binaries for macOS (arm64, x64), Linux (arm64, x64) and Windows (x64).
 
 ```bash
 pnpm add -D @denkwerk/favicon-generator
 ```
 
-Requires Node.js ≥ 22.18 (for TypeScript config files). Prebuilt binaries cover macOS (arm64, x64),
-Linux (arm64, x64) and Windows (x64).
+Requires Node.js ≥ 22.18 for TypeScript config files.
 
 ## Usage
 
-Pass everything as flags:
-
 ```bash
-favicon-generator -i ./assets/favicon.svg -o ./public/favicons --path-prefix /favicons/ --app-name "My App"
+favicon-generator -i ./assets/favicon.svg -o ./public/favicons
 ```
 
-`favicon-generator ./assets/favicon.svg ./public/favicons` is short for `-i … -o …`. Every option has a flag,
-see [Options](#options). To keep the options in the project instead, use a config file.
-
-## Configuration
-
-Create a `favicon.config.ts` next to your `package.json`:
+or, with the same options in a `favicon.config.ts` next to your `package.json`, just `favicon-generator`:
 
 ```ts
 import { defineConfig } from '@denkwerk/favicon-generator'
@@ -51,86 +42,106 @@ import { defineConfig } from '@denkwerk/favicon-generator'
 export default defineConfig({
   input: './assets/favicon.svg',
   output: './public/favicons',
-  pathPrefix: '/favicons/',
-  appName: 'My App',
-  themeColor: '#02969c',
 })
 ```
 
-and run it, e.g. from a package script:
+Flags override the config file. `favicon-generator ./assets/favicon.svg ./public/favicons` is short for `-i … -o …`.
 
-```json
-{ "scripts": { "favicons": "favicon-generator" } }
+## What you get
+
+By default, only what the image alone provides: `favicon.ico` (16, 32, 48 px), `favicon.svg` (SVG input only),
+`favicon-96x96.png`, `apple-touch-icon.png` (180 px, opaque) and `favicon.html` with these tags:
+
+```html
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 ```
 
-### Where the config is looked up
+Everything that needs values the image can't provide is opt-in: see the groups under [Options](#options).
 
-The CLI looks for the first of `favicon.config.{js,ts,mjs,mts,cjs,cts,json}`:
+## Configuration
 
-1. in the directory the CLI is run from, then
-2. in its parent directories, up to the project root: the nearest directory that contains a `package.json`
-   or `.git`. The search never continues past that.
+Options can be given as flags, in a `favicon.config.{ts,mts,cts,js,mjs,cjs,json}`, or to `generate()`; the names are
+the same everywhere (flags in kebab-case). The config file is looked up in the current directory, then its parents up
+to the nearest `package.json` or `.git`. `--config <path>` picks a file, `--no-config` ignores them.
 
-Package scripts (`pnpm favicons`, `npm run favicons`) always run in the package's own directory, so
-there it effectively means *next to your `package.json`*. Use `--config <path>` to point at another file,
-or `--no-config` to ignore config files.
+Relative paths in the config are resolved against its directory. JS/TS configs are evaluated with Node.js, so they can
+compute values, read env vars or export an (async) function; `favicon.config.json` is read without Node.js and can
+point `"$schema"` at `./node_modules/@denkwerk/favicon-generator/schema.json` for editor support.
 
-Relative paths in the config are resolved against the config file's directory. JS/TS configs are
-evaluated with Node.js, so they can compute values, read env vars, or export an (async) function.
 `defineConfig` reports unknown keys in a config object. For a function, annotate its return type
-(`(): FaviconConfig => ({ ... })`) to get the same check.
-`favicon.config.json` is read without Node.js.
+(`async (): Promise<FaviconConfig> => ({ ... })`) to get the same check.
 
-Flags on the command line take precedence over the config file, e.g. `favicon-generator --app-name Staging`.
+## Options
 
-### Options
+The optional outputs are groups: each is off until configured (Apple touch icon: on), `true` gives its defaults, an
+object sets its options, `false` or `--no-<group>` turns it off. Setting any of a group's flags turns it on.
 
-| Option | CLI flag | Default |
+| Option | Flag | Default / effect |
 | --- | --- | --- |
-| `input` | `-i, --input`, or the first argument | *(required)*: an SVG/PNG/JPEG/WebP file, or a Figma link with `node-id` |
-| `output` | `-o, --output`, or the second argument | `favicons` |
+| `input` | `-i, --input`, first argument | *(required)* SVG, PNG, JPEG or WebP, or a Figma link with `node-id` |
+| `output` | `-o, --output`, second argument | `favicons` |
+| `pathPrefix` | `-p, --path-prefix` | `/`; the URL the files are served from |
 | `overwrite` | `-y, --overwrite` | `false` |
-| `pathPrefix` | `-p, --path-prefix` | `/` |
-| `appName` | `-n, --app-name` | `App` |
-| `appShortName` | `--app-short-name` | `appName` |
-| `appDescription` | `--app-description` | `appName` |
-| `themeColor` | `--theme-color` | `#ffffff` |
-| `backgroundColor` | `--background-color` | `#ffffff` (also fills transparent pixels in the apple-touch icons) |
-| `tileColor` | `--tile-color` | `backgroundColor` |
-| `startUrl` | `--start-url` | `/?source=pwa` |
-| `scope` | `--scope` | `/` |
-| `display` | `--display` | `standalone` |
-| `iconPurpose` | `--icon-purpose` | `any maskable` |
-| `manifestCrossorigin` | `--manifest-crossorigin` | none (e.g. `use-credentials`) |
-| `figmaToken` | `--figma-token`, `FIGMA_TOKEN` | none |
-| `figmaTokenFile` | `--figma-token-file`, `FIGMA_TOKEN_FILE` | none |
-| `snippets` | `--snippets` | `['html', 'nuxt']` (also `'json'`; `[]` for none) |
+| `snippets` | `--snippets` | `['html']`; also `'json'` (`favicon-head.json`) and `'nuxt'` (`nuxt-head.ts`); `[]` for none |
+| `themeColor` | `--theme-color` | adds `<meta name="theme-color">` and the manifest's `theme_color` |
+| **`appleTouchIcon`** | `--[no-]apple-touch-icon` | on: `apple-touch-icon.png` |
+| `appleTouchIcon.background` | `--apple-touch-background` | `#ffffff`; behind transparent pixels |
+| **`manifest`** | `--[no-]manifest` | off: `manifest.json`, 192/512 px icons, `<link rel="manifest">` |
+| `manifest.name` | `-n, --name` | `name` |
+| `manifest.shortName` | `--short-name` | `short_name` |
+| `manifest.description` | `--description` | `description` |
+| `manifest.startUrl` | `--start-url` | `start_url` |
+| `manifest.scope` | `--scope` | `scope` |
+| `manifest.display` | `--display` | `display`: `fullscreen`, `standalone`, `minimal-ui`, `browser` |
+| `manifest.backgroundColor` | `--background-color` | `background_color`, also behind maskable icons |
+| `manifest.maskable` | `--maskable` | adds maskable icons (the image at 60 % on `backgroundColor`) |
+| `manifest.crossorigin` | `--manifest-crossorigin` | `crossorigin` on the manifest `<link>` |
+| **`windows`** | `--[no-]windows` | off: `browserconfig.xml`, tile images, `msapplication-*` tags |
+| `windows.tileColor` | `--tile-color` | `msapplication-TileColor` |
+| **`legacy`** | `--[no-]legacy` | off: 19 PNG sizes, sized Apple touch icons, a 7-frame `favicon.ico` |
+| `figmaToken` | `--figma-token`, `FIGMA_TOKEN` | see [Figma](#figma) |
+| `figmaTokenFile` | `--figma-token-file`, `FIGMA_TOKEN_FILE` | see [Figma](#figma) |
 
-## From Figma
-
-Use a Figma link to a component (it must contain `node-id`) as `input`. The node is exported as SVG through
-the [Figma REST API](https://developers.figma.com/docs/rest-api/).
+The manifest only contains the fields you set. Browsers need a `name` or `shortName` to offer installing the app.
 
 ```ts
 export default defineConfig({
-  input: 'https://www.figma.com/design/77SgSAGXbDv1Eye6htYdCG/ONE---Assets-Library-NEW?node-id=19938-42',
-  figmaTokenFile: '.figma-token', // or set FIGMA_TOKEN
+  input: './assets/favicon.svg',
+  output: './public/favicons',
+  pathPrefix: '/favicons/',
+  themeColor: '#02969c',
+  manifest: { name: 'My App', shortName: 'App', display: 'standalone' },
+  windows: true,
 })
 ```
 
-The API needs a personal access token with the `file_content:read` scope (Figma → Settings → Security →
-Personal access tokens). Keep it out of version control: use the `FIGMA_TOKEN` env var, or a gitignored token file.
+## Figma
 
-## Programmatic API
+Use a link to a component (it must contain `node-id`) as `input`. The node is exported as SVG through the
+[Figma REST API](https://developers.figma.com/docs/rest-api/), which needs a personal access token with the
+`file_content:read` scope (Figma → Settings → Security → Personal access tokens). Pass it in the `FIGMA_TOKEN` env var
+(e.g. from a gitignored `.env.local`) or a gitignored `figmaTokenFile`, not in the config itself.
+
+```ts
+export default defineConfig({
+  input: 'https://www.figma.com/design/<file-key>/<file-name>?node-id=19938-42',
+  output: './public/favicons',
+})
+```
+
+## Node.js API
 
 ```ts
 import { generate } from '@denkwerk/favicon-generator'
 
-await generate({ input: 'assets/favicon.svg', output: 'public/favicons' }, { cwd: import.meta.dirname })
+await generate({ input: 'assets/favicon.svg', output: 'public/favicons', manifest: { name: 'My App' } }, { cwd: import.meta.dirname })
 ```
 
-`generate()` does not read config files: the object you pass is the whole config. To use a config file from
-your own tooling, `loadConfig()` finds and evaluates it with the CLI's rules:
+`generate()` does not read config files: the object you pass is the whole config. To use a config file from your own
+tooling, `loadConfig()` finds and evaluates it with the CLI's rules:
 
 ```ts
 import { loadConfig } from '@denkwerk/favicon-generator'
@@ -138,22 +149,9 @@ import { loadConfig } from '@denkwerk/favicon-generator'
 const { path, config } = await loadConfig({ cwd: process.cwd() }) // path is null if none was found
 ```
 
-## Output
-
-| File | Notes |
-| --- | --- |
-| `favicon-{16,32,57,60,70,72,76,96,114,120,128,144,150,152,180,192,310,384,512}.png` | transparent |
-| `apple-touch-icon.png`, `apple-touch-icon-{120x120,152x152}.png` (+ `-precomposed`) | opaque |
-| `favicon.ico` | 16, 24, 32, 48, 64, 128, 256 |
-| `favicon.svg` | copy of an SVG input |
-| `manifest.json`, `browserconfig.xml` | web app manifest, Windows tiles |
-| `favicon.html` | `<link>`/`<meta>` tags for `<head>` |
-| `nuxt-head.ts` | the same tags as `faviconHead`, for `app.head` in `nuxt.config.ts` |
-| `favicon-head.json` | the same tags as `{ link, meta }` JSON (only with `snippets: ['json']`) |
-
-For Nuxt, the [`@denkwerk/nuxt-favicon-generator`](../nuxt-favicon-generator) module does all of this for you
-at build time: it generates the files, serves them and adds the tags.
+For Nuxt, the [`@denkwerk/nuxt-favicon-generator`](https://www.npmjs.com/package/@denkwerk/nuxt-favicon-generator)
+module does all of this at build time: it generates the files, serves them and adds the tags.
 
 ## License
 
-[MIT](../../LICENSE)
+[MIT](https://github.com/denkwerk/favicon-generator/blob/main/LICENSE)
