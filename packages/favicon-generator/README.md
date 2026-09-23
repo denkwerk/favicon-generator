@@ -152,8 +152,13 @@ import { loadConfig } from '@denkwerk/favicon-generator'
 const { path, config } = await loadConfig({ cwd: process.cwd() }) // path is null if none was found
 ```
 
+`mergeConfig(config, overrides)` puts your own options on top the way CLI flags do: `undefined` values are skipped,
+and groups such as `manifest` are merged key by key.
+
 For Nuxt, the [`@denkwerk/nuxt-favicon-generator`](https://www.npmjs.com/package/@denkwerk/nuxt-favicon-generator)
-module does all of this at build time: it generates the files, serves them and adds the tags.
+module does all of this at build time: it generates the files, serves them and adds the tags. For Vite, Rollup,
+Rolldown, webpack and Rspack, [`@denkwerk/unplugin-favicon-generator`](https://www.npmjs.com/package/@denkwerk/unplugin-favicon-generator)
+emits them with the build.
 
 ## License
 

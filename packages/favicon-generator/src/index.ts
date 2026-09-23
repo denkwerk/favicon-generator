@@ -102,6 +102,29 @@ export function defineConfig(config: UserConfig): UserConfig {
   return config
 }
 
+/** Options that are groups: `true`, `false` or an options object. */
+const GROUPS = new Set(['appleTouchIcon', 'manifest', 'windows'])
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/**
+ * Merges `overrides` over `base` the way CLI flags override a config file:
+ * `undefined` values are skipped, and the options of a group are merged key
+ * by key, so `{ manifest: { name } }` keeps the file's other manifest options.
+ */
+export function mergeConfig<T extends FaviconConfig>(base: T, overrides: Partial<T>): T {
+  const result = { ...base } as Record<string, unknown>
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === undefined) {
+      continue
+    }
+    const current = result[key]
+    result[key] = GROUPS.has(key) && isObject(current) && isObject(value) ? { ...current, ...value } : value
+  }
+  return result as T
+}
+
 export interface GenerateOptions {
   /** Directory that relative paths in `config` are resolved against. @default process.cwd() */
   cwd?: string
