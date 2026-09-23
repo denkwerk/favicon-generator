@@ -1,0 +1,193 @@
+name: Release
+
+# Push a tag `v<version>` (after `pnpm set-version <version>` is committed) to
+# publish the npm packages and a GitHub release. Run manually for a dry run
+# that builds and packs everything without publishing.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      npm-tag: ${{ steps.version.outputs.npm-tag }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - id: version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            node scripts/set-version.ts --check "$version"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            version="$(node -p "require('./packages/favicon-generator/package.json').version")"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+          # Prereleases (1.0.0-beta.1) must not become `latest`.
+          if [[ "$version" == *-* ]]; then npm_tag=next; else npm_tag=latest; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "npm-tag=$npm_tag" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            zigbuild: true
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            zigbuild: true
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      # Static musl binaries, cross-compiled with zig as the linker.
+      - if: matrix.zigbuild
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.1
+      - if: matrix.zigbuild
+        run: pipx install cargo-zigbuild
+
+      - name: Build
+        shell: bash
+        run: |
+          if [[ "${{ matrix.zigbuild }}" == true ]]; then
+            cargo zigbuild --locked --release --target ${{ matrix.target }}
+          else
+            cargo build --locked --release --target ${{ matrix.target }}
+          fi
+
+      - name: Package
+        shell: bash
+        run: |
+          exe=favicon-generator
+          [[ "${{ matrix.target }}" == *windows* ]] && exe=favicon-generator.exe
+          mkdir -p "dist/${{ matrix.target }}"
+          cp "target/${{ matrix.target }}/release/$exe" "dist/${{ matrix.target }}/"
+          archive="favicon-generator-v${{ needs.version.outputs.version }}-${{ matrix.target }}"
+          if [[ "$exe" == *.exe ]]; then
+            (cd "dist/${{ matrix.target }}" && 7z a "../../$archive.zip" "$exe")
+          else
+            tar -czf "$archive.tar.gz" -C "dist/${{ matrix.target }}" "$exe"
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binary-${{ matrix.target }}
+          path: dist/${{ matrix.target }}
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: archive-${{ matrix.target }}
+          path: favicon-generator-v*
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # GitHub release
+      id-token: write # npm provenance / trusted publishing
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: binary-*
+          path: artifacts
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: archive-*
+          path: archives
+          merge-multiple: true
+
+      - run: pnpm install --frozen-lockfile
+      # Only the TypeScript build: the binaries come from the build job.
+      - run: pnpm --filter @denkwerk/favicon-generator run build
+
+      - name: Prepare npm packages
+        run: |
+          for dir in artifacts/binary-*; do mv "$dir" "artifacts/${dir#artifacts/binary-}"; done
+          node scripts/prepare-npm.ts artifacts > package-dirs.txt
+          cat package-dirs.txt
+
+      - name: Smoke test the linux-x64 binary
+        run: |
+          chmod +x npm/linux-x64/bin/favicon-generator
+          npm/linux-x64/bin/favicon-generator --version
+          npm/linux-x64/bin/favicon-generator demo/typescript/assets/favicon.svg "$RUNNER_TEMP/smoke" --no-config
+          test -s "$RUNNER_TEMP/smoke/favicon.ico"
+
+      - name: Pack (dry run)
+        if: needs.version.outputs.publish != 'true'
+        run: while read -r dir; do (cd "$dir" && npm pack --dry-run); done < package-dirs.txt
+
+      # Platform packages first, so the main package's optional dependencies resolve.
+      # Uses npm trusted publishing when configured, otherwise the NPM_TOKEN secret.
+      # Provenance statements are only supported for public repositories.
+      - name: Publish to npm
+        if: needs.version.outputs.publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: ${{ !github.event.repository.private }}
+          VERSION: ${{ needs.version.outputs.version }}
+          NPM_TAG: ${{ needs.version.outputs.npm-tag }}
+        run: |
+          while read -r dir; do
+            name="$(node -p "require('$dir/package.json').name")"
+            if npm view "$name@$VERSION" version >/dev/null 2>&1; then
+              echo "$name@$VERSION is already published; skipping"
+              continue
+            fi
+            (cd "$dir" && npm publish --access public --tag "$NPM_TAG")
+          done < package-dirs.txt
+
+      - name: Create GitHub release
+        if: needs.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          prerelease=()
+          [[ "$VERSION" == *-* ]] && prerelease=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" archives/* --title "v$VERSION" --generate-notes "${prerelease[@]}"

@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  check:
+    name: Build, lint and test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        if: runner.os == 'Linux'
+        run: cargo fmt --all -- --check
+
+      # Builds the crate and the npm package, lints and tests the Cargo workspace,
+      # type-checks the demo and generates its favicons from favicon.config.ts.
+      - run: pnpm turbo run build lint test typecheck generate
+
+      - name: Programmatic API
+        run: pnpm --filter demo-typescript run generate:api
+
+      - name: Verify generated files
+        shell: bash
+        run: |
+          for file in favicon.ico favicon.svg favicon-512x512.png apple-touch-icon.png manifest.json browserconfig.xml favicon.html nuxt-head.ts; do
+            test -s "demo/typescript/public/favicons/$file" || { echo "missing $file"; exit 1; }
+          done
+          test -s demo/typescript/public/favicons-api/favicon.html

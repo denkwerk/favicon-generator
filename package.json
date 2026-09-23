@@ -1,0 +1,21 @@
+{
+  "name": "favicon-generator-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "turbo run format",
+    "generate": "turbo run generate",
+    "set-version": "node scripts/set-version.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.3"
+  }
+}

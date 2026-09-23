@@ -1,0 +1,15 @@
+{
+  "name": "demo-typescript",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "favicon-generator",
+    "generate:api": "node scripts/generate.ts",
+    "typecheck": "tsc"
+  },
+  "devDependencies": {
+    "@denkwerk/favicon-generator": "workspace:*",
+    "@types/node": "^24.13.6",
+    "typescript": "^7.0.2"
+  }
+}

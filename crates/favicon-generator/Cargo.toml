@@ -1,0 +1,20 @@
+[package]
+name = "favicon-generator"
+description = "Generate favicons, touch icons, a web app manifest and browserconfig.xml from an SVG or a Figma node"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive", "env", "wrap_help"] }
+ico = "0.5.0"
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp"] }
+resvg = { version = "0.48.1", default-features = false, features = ["memmap-fonts", "raster-images", "system-fonts", "text"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.151", features = ["preserve_order"] }
+ureq = "3.4.2"
+
+[dev-dependencies]
+tempfile = "3.27.0"

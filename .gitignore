@@ -1,2 +1,6 @@
 /target
+node_modules/
+dist/
+.turbo/
 .figma-token
+/npm/

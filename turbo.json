@@ -1,0 +1,30 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "futureFlags": {
+    "experimentalCargoWorkspaces": true
+  },
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"]
+    },
+    "@denkwerk/favicon-generator#build": {
+      "dependsOn": ["favicon-generator#build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "lint": {},
+    "check": {},
+    "format": {
+      "cache": false
+    },
+    "generate": {
+      "dependsOn": ["^build"],
+      "cache": false
+    }
+  }
+}

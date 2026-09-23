@@ -1,36 +1,53 @@
 # favicon-generator
 
-Generates a complete favicon set from a single SVG (recommended) or PNG/JPEG/WebP image.
+Generates a complete favicon set from an SVG, a raster image or a Figma component. It's a Rust CLI, distributed
+on npm as [`@denkwerk/favicon-generator`](packages/favicon-generator). See that README for usage and configuration.
+
+## Repository
+
+A [Turborepo](https://turborepo.dev) monorepo that mixes a Cargo workspace (using Turborepo's
+[experimental native Rust support](https://turborepo.dev/docs/guides/tools/rust)) with a pnpm workspace:
+
+| Path | Turborepo package | What |
+| --- | --- | --- |
+| [`crates/favicon-generator`](crates/favicon-generator) | `favicon-generator` | The Rust CLI |
+| — | `cargo-workspace` | The Cargo workspace itself (workspace-wide `test`, `lint`, `check`, `format`) |
+| [`packages/favicon-generator`](packages/favicon-generator) | `@denkwerk/favicon-generator` | npm package: `defineConfig`, `generate()`, and the CLI launcher |
+| [`demo/typescript`](demo/typescript) | `demo-typescript` | Example TypeScript project using a `favicon.config.ts` |
+
+`@denkwerk/favicon-generator#build` depends on `favicon-generator#build` (see [`turbo.json`](turbo.json)),
+so the demo always runs against a freshly built binary. Inside the monorepo, the npm package uses
+`target/{release,debug}/favicon-generator`. Once published, it uses the binary from the platform package
+`@denkwerk/favicon-generator-<os>-<cpu>`.
+
+## Development
+
+Requires Node.js ≥ 22.18, pnpm and a Rust toolchain.
 
 ```bash
-cargo run --release -- favicon.svg out -p /public -n "Motel One" --manifest-crossorigin use-credentials
+pnpm install
+pnpm turbo run build lint test typecheck   # everything
+pnpm turbo run generate                    # run the demo (uses Figma if a token is available)
+pnpm turbo run format                      # cargo fmt
 ```
 
-### From Figma
+To test the Figma export locally, put a personal access token into `.figma-token` (gitignored).
 
-Pass a Figma link that includes a `node-id` instead of a file. The node is exported as SVG via the
-[REST API](https://developers.figma.com/docs/rest-api/) (`GET /v1/images/:key?format=svg`) and used as the source.
+## Releasing
 
-```bash
-echo "figd_…" > .figma-token   # gitignored
-cargo run --release -- "https://www.figma.com/design/77SgSAGXbDv1Eye6htYdCG/ONE---Assets-Library-NEW?node-id=19938-42" out \
-  --figma-token-file .figma-token -p /public -n "Motel One"
-```
+1. `pnpm set-version 1.2.3` updates the crate, `Cargo.lock` and the npm package. Commit the change.
+2. Push a tag: `git tag v1.2.3 && git push origin v1.2.3`.
 
-You need a personal access token with the `file_content:read` scope (Figma → Settings → Security → Personal access tokens).
-It is read from `--figma-token`, the `FIGMA_TOKEN` env var, `--figma-token-file`, or the `FIGMA_TOKEN_FILE` env var.
+The [release workflow](.github/workflows/release.yml) then:
 
-## Output
+- builds the binaries for macOS (arm64, x64), Linux (arm64, x64, static musl) and Windows (x64);
+- publishes the platform packages and `@denkwerk/favicon-generator` to npm (prereleases such as
+  `1.2.3-beta.1` go to the `next` dist-tag);
+- creates a GitHub release with the archived binaries.
 
-| File | Notes |
-| --- | --- |
-| `favicon-{16,32,57,60,70,72,76,96,114,120,128,144,150,152,180,192,310,384,512}.png` | transparent RGBA |
-| `apple-touch-icon.png`, `apple-touch-icon-{120x120,152x152}.png` (+ `-precomposed`) | opaque, flattened onto `--background-color` |
-| `favicon.ico` | 16, 24, 32, 48, 64, 128, 256 |
-| `favicon.svg` | copy of the input (SVG input only) |
-| `manifest.json` | web app manifest |
-| `browserconfig.xml` | Windows tiles |
-| `favicon.html` / `nuxt-head.ts` | `<head>` tags as HTML, or as a TS object for Nuxt's `app.head` (`--snippets`) |
+Running the workflow manually (*Actions → Release → Run workflow*) does a dry run: it builds and packs
+everything but publishes nothing.
 
-SVG sources are rendered natively at each size with [resvg](https://github.com/linebender/resvg);
-raster sources are downscaled with Lanczos3. Run with `--help` for all options.
+npm authentication uses [trusted publishing](https://docs.npmjs.com/trusted-publishers) when it is configured for
+the packages. Otherwise it uses an `NPM_TOKEN` repository secret, which is needed for the very first publish,
+because trusted publishers can only be set up once a package exists.

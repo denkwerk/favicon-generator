@@ -1,13 +1,17 @@
-[package]
-name = "favicon-generator"
+[workspace]
+members = ["crates/*"]
+resolver = "3"
+
+# Identity of the Cargo workspace in Turborepo's package graph.
+[workspace.metadata]
+name = "cargo-workspace"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+repository = "https://github.com/denkwerk/favicon-generator"
 
-[dependencies]
-anyhow = "1.0.104"
-clap = { version = "4.6.7", features = ["derive", "env", "wrap_help"] }
-ico = "0.5.0"
-image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp"] }
-resvg = { version = "0.48.1", default-features = false, features = ["memmap-fonts", "raster-images", "system-fonts", "text"] }
-serde_json = { version = "1.0.151", features = ["preserve_order"] }
-ureq = "3.4.2"
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true
