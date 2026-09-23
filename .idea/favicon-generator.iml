@@ -3,7 +3,23 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/crates/favicon-generator/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/crates/favicon-generator/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/demo/typescript/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/cli-figma/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/cli-figma/public" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/cli/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/cli/public" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/nuxt-config-file/.output" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/nuxt-config-file/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/nuxt/.output" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/nuxt/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/typescript/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/typescript/public" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/favicon-generator/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/nuxt-favicon-generator/.turbo" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
