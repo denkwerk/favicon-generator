@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "strict": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "lib": ["es2023", "dom"],
+    "types": ["node", "vite/client", "@denkwerk/unplugin-favicon-generator/client"]
+  },
+  "include": ["src", "test", "vite.config.ts"]
+}

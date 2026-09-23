@@ -1,6 +1,6 @@
 // Publishes the tarballs from scripts/pack-npm.ts, the core package first so
-// the Nuxt module's dependency resolves. Versions that are already on npm are
-// skipped, so a failed release can be published again.
+// the dependency of the Nuxt module and the unplugin resolves. Versions that
+// are already on npm are skipped, so a failed release can be published again.
 //
 //   node scripts/publish-npm.ts <dir> <version> <dist-tag>
 //

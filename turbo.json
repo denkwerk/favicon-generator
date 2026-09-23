@@ -18,6 +18,21 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "@denkwerk/unplugin-favicon-generator#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    // The tests run real builds with the native binary.
+    "@denkwerk/unplugin-favicon-generator#test": {
+      "dependsOn": ["^build", "favicon-generator#build"]
+    },
+    "example-vite#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "example-vite#test": {
+      "dependsOn": ["build"]
+    },
     "example-nuxt#build": {
       "dependsOn": ["^build"],
       "env": ["NUXT_APP_BASE_URL"],

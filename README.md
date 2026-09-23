@@ -13,6 +13,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@denkwerk/favicon-generator"><img src="https://img.shields.io/npm/v/@denkwerk/favicon-generator?color=02969c&label=%40denkwerk%2Ffavicon-generator" alt="npm version of @denkwerk/favicon-generator"></a>
   <a href="https://www.npmjs.com/package/@denkwerk/nuxt-favicon-generator"><img src="https://img.shields.io/npm/v/@denkwerk/nuxt-favicon-generator?color=02969c&label=%40denkwerk%2Fnuxt-favicon-generator" alt="npm version of @denkwerk/nuxt-favicon-generator"></a>
+  <a href="https://www.npmjs.com/package/@denkwerk/unplugin-favicon-generator"><img src="https://img.shields.io/npm/v/@denkwerk/unplugin-favicon-generator?color=02969c&label=%40denkwerk%2Funplugin-favicon-generator" alt="npm version of @denkwerk/unplugin-favicon-generator"></a>
   <a href="https://github.com/denkwerk/favicon-generator/actions/workflows/release.yml"><img src="https://github.com/denkwerk/favicon-generator/actions/workflows/release.yml/badge.svg" alt="Release workflow status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/denkwerk/favicon-generator?color=02969c" alt="MIT license"></a>
 </p>
@@ -22,7 +23,8 @@
   <a href="#what-you-get">What you get</a> ·
   <a href="#configuration">Configuration</a> ·
   <a href="packages/favicon-generator">CLI &amp; API docs</a> ·
-  <a href="packages/nuxt-favicon-generator">Nuxt module docs</a>
+  <a href="packages/nuxt-favicon-generator">Nuxt module docs</a> ·
+  <a href="packages/unplugin-favicon-generator">Vite &amp; bundler plugin docs</a>
 </p>
 
 <br>
@@ -32,10 +34,13 @@
 - 🎨 **Figma as a source**: pass a link to a component and it is exported through the Figma REST API
 - ⚡️ **Native and self-contained**: a Rust binary, prebuilt for macOS, Linux and Windows; no sharp, no ImageMagick,
   no install scripts
-- 🛠️ **One set of options everywhere**: CLI flags, `favicon.config.{ts,js,json}`, the Node.js API and the Nuxt module,
+- 🛠️ **One set of options everywhere**: CLI flags, `favicon.config.{ts,js,json}`, the Node.js API, the Nuxt module and
+  the bundler plugin,
   typed by `defineConfig` and a JSON Schema
 - 💚 **Nuxt module**: generates at build time, serves the files through Nitro, adds the tags, honours `app.baseURL`
   and caches the output
+- ⚡ **Vite, Rollup, Rolldown, webpack and Rspack plugin**: one [unplugin](https://github.com/unjs/unplugin) that emits
+  the files with your build; in Vite it also injects the tags, follows `base` and serves the files in dev
 
 ## Quick start
 
@@ -104,6 +109,24 @@ export default defineNuxtConfig({
 ```
 
 That's it: nothing is written to `public/`, and every page gets the `<link>` tags.
+
+### Vite, Rollup, Rolldown, webpack, Rspack
+
+```bash
+pnpm add -D @denkwerk/unplugin-favicon-generator
+```
+
+```ts
+// vite.config.ts (or /rollup, /rolldown, /webpack, /rspack)
+import favicons from '@denkwerk/unplugin-favicon-generator/vite'
+
+export default defineConfig({
+  plugins: [favicons({ input: './assets/favicon.svg' })],
+})
+```
+
+The files are emitted with your build, and Vite adds the tags to every HTML page. With other bundlers, import them
+from `virtual:favicons`, see the [plugin docs](packages/unplugin-favicon-generator).
 
 ### Node.js API
 
@@ -282,12 +305,13 @@ and the old names are rejected with a hint:
 | --- | --- | --- |
 | [`@denkwerk/favicon-generator`](packages/favicon-generator) | [![npm](https://img.shields.io/npm/v/@denkwerk/favicon-generator?color=02969c&label=)](https://www.npmjs.com/package/@denkwerk/favicon-generator) | CLI, `defineConfig`, `generate()` and `loadConfig()`, with the prebuilt binaries for all platforms |
 | [`@denkwerk/nuxt-favicon-generator`](packages/nuxt-favicon-generator) | [![npm](https://img.shields.io/npm/v/@denkwerk/nuxt-favicon-generator?color=02969c&label=)](https://www.npmjs.com/package/@denkwerk/nuxt-favicon-generator) | Nuxt module: generates, serves and links the favicons |
+| [`@denkwerk/unplugin-favicon-generator`](packages/unplugin-favicon-generator) | [![npm](https://img.shields.io/npm/v/@denkwerk/unplugin-favicon-generator?color=02969c&label=)](https://www.npmjs.com/package/@denkwerk/unplugin-favicon-generator) | Vite, Rollup, Rolldown, webpack and Rspack plugin: emits the favicons with the build and, in Vite, links them |
 
 Prebuilt binaries cover macOS (arm64, x64), Linux (arm64, x64, static musl) and Windows (x64, also used on Arm).
 The Rust crate lives in [`crates/favicon-generator`](crates/favicon-generator) and is not published to crates.io.
 
 **Examples**: [CLI](examples/cli) · [CLI with Figma](examples/cli-figma) · [Node.js API](examples/typescript) ·
-[Nuxt](examples/nuxt) · [Nuxt with `favicon.config.ts`](examples/nuxt-config-file)
+[Nuxt](examples/nuxt) · [Nuxt with `favicon.config.ts`](examples/nuxt-config-file) · [Vite](examples/vite)
 
 ## Contributing
 
@@ -295,7 +319,7 @@ Requires Node.js ≥ 22.18, pnpm and a Rust toolchain.
 
 ```bash
 pnpm install
-pnpm turbo run build lint test typecheck   # everything: crate, npm packages, tests and the Nuxt examples
+pnpm turbo run build lint test typecheck   # everything: crate, npm packages, tests and the Nuxt and Vite examples
 pnpm turbo run generate                    # run the CLI and Node.js API examples
 pnpm --filter example-nuxt dev             # the Nuxt example in dev mode
 ```
@@ -314,6 +338,7 @@ the Figma example runs when a `FIGMA_TOKEN` repository secret is set.
 | `crates/favicon-generator/tests` | the binary end to end: files and tags per option ([snapshots](crates/favicon-generator/tests/snapshots)), images, config files, errors, Figma against a mock server | `cargo test` |
 | `packages/favicon-generator/test` | `generate()` and `loadConfig()`; type tests for `defineConfig`; TS types vs. JSON Schema | `pnpm test`, `pnpm typecheck` |
 | `packages/nuxt-favicon-generator/test` | option merging; builds and serves [fixture apps](packages/nuxt-favicon-generator/test/fixtures) and checks files and tags | `pnpm test` |
+| `packages/unplugin-favicon-generator/test` | real Vite (build, SSR build, dev server), Rollup, Rolldown, webpack and Rspack builds of [fixtures](packages/unplugin-favicon-generator/test/fixtures): emitted files, tags, `virtual:favicons`, config files, regeneration in dev | `pnpm test` |
 
 `pnpm turbo run test` runs all of them, as CI does on Linux, macOS and Windows. After an intended output change,
 review and accept the snapshots with [`cargo insta review`](https://insta.rs) (or `INSTA_UPDATE=always cargo test`).
@@ -336,6 +361,7 @@ A [Turborepo](https://turborepo.dev) monorepo that combines a Cargo workspace (w
 | — | `cargo-workspace` | The Cargo workspace itself (workspace-wide `test`, `lint`, `check`, `format`) |
 | [`packages/favicon-generator`](packages/favicon-generator) | `@denkwerk/favicon-generator` | npm package: `defineConfig`, `generate()` and the CLI launcher |
 | [`packages/nuxt-favicon-generator`](packages/nuxt-favicon-generator) | `@denkwerk/nuxt-favicon-generator` | Nuxt module |
+| [`packages/unplugin-favicon-generator`](packages/unplugin-favicon-generator) | `@denkwerk/unplugin-favicon-generator` | Bundler plugin (unplugin) |
 | [`examples/*`](examples) | `example-*` | The examples above, run in CI |
 
 `@denkwerk/favicon-generator#build` depends on `favicon-generator#build` (see [`turbo.json`](turbo.json)), so the

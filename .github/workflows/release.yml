@@ -192,7 +192,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: node scripts/set-version.ts "$VERSION"
       # Only the TypeScript builds: the binaries come from the build job.
-      - run: pnpm --filter @denkwerk/favicon-generator --filter @denkwerk/nuxt-favicon-generator run build
+      - run: pnpm --filter @denkwerk/favicon-generator --filter @denkwerk/nuxt-favicon-generator --filter @denkwerk/unplugin-favicon-generator run build
       - run: node scripts/prepare-npm.ts artifacts
 
       - name: Smoke test the linux-x64 binary through the package

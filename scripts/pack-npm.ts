@@ -2,8 +2,8 @@
 //
 // The core package is packed with npm, which keeps the executable bit of the
 // binaries (pnpm resets it to 644 for anything not listed in `bin`). The Nuxt
-// module is packed with pnpm, which replaces its `workspace:` range with the
-// released version.
+// module and the unplugin are packed with pnpm, which replaces their
+// `workspace:` ranges with the released version.
 //
 //   node scripts/pack-npm.ts <out-dir> <version>
 //

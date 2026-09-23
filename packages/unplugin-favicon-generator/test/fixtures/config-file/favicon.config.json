@@ -1,0 +1,5 @@
+{
+  "input": "./favicon.svg",
+  "themeColor": "#02969c",
+  "manifest": { "name": "From the config file", "shortName": "Config" }
+}

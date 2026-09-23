@@ -13,7 +13,11 @@ export const TARGETS: Record<string, { os: string, cpu: string }> = {
 }
 
 /** The published packages in dependency order. */
-export const PACKAGES = ['@denkwerk/favicon-generator', '@denkwerk/nuxt-favicon-generator']
+export const PACKAGES = [
+  '@denkwerk/favicon-generator',
+  '@denkwerk/nuxt-favicon-generator',
+  '@denkwerk/unplugin-favicon-generator',
+]
 
 /** File name `pnpm pack` and `npm pack` give the tarball of a scoped package. */
 export function tarballName(name: string, version: string): string {

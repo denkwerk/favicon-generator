@@ -20,6 +20,7 @@ const files: { path: string, pattern: RegExp }[] = [
   { path: 'Cargo.lock', pattern: /(name = "favicon-generator"\r?\nversion = ")([^"]+)(")/ },
   { path: 'packages/favicon-generator/package.json', pattern: /(\n {2}"version": ")([^"]+)(")/ },
   { path: 'packages/nuxt-favicon-generator/package.json', pattern: /(\n {2}"version": ")([^"]+)(")/ },
+  { path: 'packages/unplugin-favicon-generator/package.json', pattern: /(\n {2}"version": ")([^"]+)(")/ },
 ]
 
 let mismatches = 0
