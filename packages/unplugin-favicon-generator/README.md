@@ -63,7 +63,7 @@ export default {
 </details>
 
 <details>
-<summary><b>Rolldown</b></summary>
+<summary><b>Rolldown, tsdown</b></summary>
 
 ```ts
 // rolldown.config.js
@@ -73,6 +73,8 @@ export default {
   plugins: [favicons({ input: './assets/favicon.svg' })],
 }
 ```
+
+[tsdown](https://tsdown.dev) builds with Rolldown, so it takes the same plugin in `plugins` of `tsdown.config.ts`.
 
 </details>
 
@@ -164,6 +166,8 @@ Relative paths are resolved against `root`.
 ## Examples
 
 - [`examples/vite`](../../examples/vite): a Vite app with the tags injected and read from `virtual:favicons`
+- [`examples/vite-config-file`](../../examples/vite-config-file): options in `favicon.config.ts`
+- [`examples/tsdown`](../../examples/tsdown): a library built with [tsdown](https://tsdown.dev) that ships its favicons and exports their tags
 
 ## License
 

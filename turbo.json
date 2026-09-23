@@ -33,6 +33,20 @@
     "example-vite#test": {
       "dependsOn": ["build"]
     },
+    "example-vite-config-file#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "example-vite-config-file#test": {
+      "dependsOn": ["build"]
+    },
+    "example-tsdown#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "example-tsdown#test": {
+      "dependsOn": ["build"]
+    },
     "example-nuxt#build": {
       "dependsOn": ["^build"],
       "env": ["NUXT_APP_BASE_URL"],

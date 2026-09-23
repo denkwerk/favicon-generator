@@ -311,7 +311,8 @@ Prebuilt binaries cover macOS (arm64, x64), Linux (arm64, x64, static musl) and 
 The Rust crate lives in [`crates/favicon-generator`](crates/favicon-generator) and is not published to crates.io.
 
 **Examples**: [CLI](examples/cli) · [CLI with Figma](examples/cli-figma) · [Node.js API](examples/typescript) ·
-[Nuxt](examples/nuxt) · [Nuxt with `favicon.config.ts`](examples/nuxt-config-file) · [Vite](examples/vite)
+[Nuxt](examples/nuxt) · [Nuxt with `favicon.config.ts`](examples/nuxt-config-file) · [Vite](examples/vite) ·
+[Vite with `favicon.config.ts`](examples/vite-config-file) · [Library with tsdown](examples/tsdown)
 
 ## Contributing
 
