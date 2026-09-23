@@ -1,0 +1,46 @@
+{
+  "name": "@denkwerk/nuxt-favicon-generator",
+  "version": "0.1.0",
+  "description": "Nuxt module that generates favicons, touch icons and a web app manifest from an SVG or a Figma node, and adds the head tags",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/denkwerk/favicon-generator.git",
+    "directory": "packages/nuxt-favicon-generator"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.mts",
+      "import": "./dist/module.mjs"
+    }
+  },
+  "main": "./dist/module.mjs",
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/types.d.mts"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "nuxt-module-build build"
+  },
+  "dependencies": {
+    "@denkwerk/favicon-generator": "workspace:^",
+    "@nuxt/kit": "^4.5.2",
+    "@nuxt/schema": "^4.5.2",
+    "ufo": "^1.6.1"
+  },
+  "devDependencies": {
+    "@nuxt/module-builder": "^1.0.3",
+    "@types/node": "^24.13.6",
+    "nuxt": "^4.5.2",
+    "typescript": "^6.0.3"
+  }
+}

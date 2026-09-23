@@ -18,6 +18,7 @@ const files: { path: string, pattern: RegExp }[] = [
   { path: 'Cargo.toml', pattern: /(\[workspace\.package\]\nversion = ")([^"]+)(")/ },
   { path: 'Cargo.lock', pattern: /(name = "favicon-generator"\nversion = ")([^"]+)(")/ },
   { path: 'packages/favicon-generator/package.json', pattern: /(\n {2}"version": ")([^"]+)(")/ },
+  { path: 'packages/nuxt-favicon-generator/package.json', pattern: /(\n {2}"version": ")([^"]+)(")/ },
 ]
 
 let mismatches = 0

@@ -121,6 +121,8 @@ pub enum Snippet {
     Html,
     /// nuxt-head.ts exporting `faviconHead` for `app.head`.
     Nuxt,
+    /// favicon-head.json with the tags as `{ link: [...], meta: [...] }`.
+    Json,
     /// Write no snippets.
     None,
 }

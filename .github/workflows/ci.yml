@@ -44,17 +44,18 @@ jobs:
         if: runner.os == 'Linux'
         run: cargo fmt --all -- --check
 
-      # Builds the crate and the npm package, lints and tests the Cargo workspace,
-      # type-checks the demo and generates its favicons from favicon.config.ts.
+      # Builds the crate, the npm packages and the Nuxt example (which runs the
+      # module), lints and tests the Cargo workspace, type-checks the examples,
+      # checks the Nuxt output and generates the TypeScript example's favicons.
       - run: pnpm turbo run build lint test typecheck generate
 
       - name: Programmatic API
-        run: pnpm --filter demo-typescript run generate:api
+        run: pnpm --filter example-typescript run generate:api
 
       - name: Verify generated files
         shell: bash
         run: |
           for file in favicon.ico favicon.svg favicon-512x512.png apple-touch-icon.png manifest.json browserconfig.xml favicon.html nuxt-head.ts; do
-            test -s "demo/typescript/public/favicons/$file" || { echo "missing $file"; exit 1; }
+            test -s "examples/typescript/public/favicons/$file" || { echo "missing $file"; exit 1; }
           done
-          test -s demo/typescript/public/favicons-api/favicon.html
+          test -s examples/typescript/public/favicons-api/favicon.html

@@ -118,6 +118,12 @@ fn generate(settings: &Settings) -> Result<()> {
             assets::html_snippet(&cfg).into_bytes(),
         ));
     }
+    if settings.snippets.contains(&Snippet::Json) {
+        files.push((
+            "favicon-head.json".into(),
+            assets::json_snippet(&cfg).into_bytes(),
+        ));
+    }
     if settings.snippets.contains(&Snippet::Nuxt) {
         files.push((
             "nuxt-head.ts".into(),

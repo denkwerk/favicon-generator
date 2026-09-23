@@ -73,7 +73,7 @@ Flags on the command line take precedence over the config file, e.g. `favicon-ge
 | `manifestCrossorigin` | `--manifest-crossorigin` | none (e.g. `use-credentials`) |
 | `figmaToken` | `--figma-token`, `FIGMA_TOKEN` | none |
 | `figmaTokenFile` | `--figma-token-file`, `FIGMA_TOKEN_FILE` | none |
-| `snippets` | `--snippets` | `['html', 'nuxt']` (`[]` for none) |
+| `snippets` | `--snippets` | `['html', 'nuxt']` (also `'json'`; `[]` for none) |
 
 ## From Figma
 
@@ -111,3 +111,7 @@ await generate({ input: 'assets/favicon.svg', output: 'public/favicons' }, { cwd
 | `manifest.json`, `browserconfig.xml` | web app manifest, Windows tiles |
 | `favicon.html` | `<link>`/`<meta>` tags for `<head>` |
 | `nuxt-head.ts` | the same tags as `faviconHead`, for `app.head` in `nuxt.config.ts` |
+| `favicon-head.json` | the same tags as `{ link, meta }` JSON (only with `snippets: ['json']`) |
+
+For Nuxt, the [`@denkwerk/nuxt-favicon-generator`](../nuxt-favicon-generator) module does all of this for you
+at build time: it generates the files, serves them and adds the tags.

@@ -4,7 +4,7 @@ The Rust CLI behind [`@denkwerk/favicon-generator`](../../packages/favicon-gener
 options, config files and the Figma integration.
 
 ```bash
-cargo run --release -- ../../demo/typescript/assets/favicon.svg out -p /public -n "Motel One"
+cargo run --release -- ../../examples/typescript/assets/favicon.svg out -p /public -n "Motel One"
 cargo run --release -- --help
 ```
 

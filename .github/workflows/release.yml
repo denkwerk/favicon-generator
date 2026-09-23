@@ -142,8 +142,8 @@ jobs:
           merge-multiple: true
 
       - run: pnpm install --frozen-lockfile
-      # Only the TypeScript build: the binaries come from the build job.
-      - run: pnpm --filter @denkwerk/favicon-generator run build
+      # Only the TypeScript builds: the binaries come from the build job.
+      - run: pnpm --filter @denkwerk/favicon-generator --filter @denkwerk/nuxt-favicon-generator run build
 
       - name: Prepare npm packages
         run: |
@@ -155,7 +155,7 @@ jobs:
         run: |
           chmod +x npm/linux-x64/bin/favicon-generator
           npm/linux-x64/bin/favicon-generator --version
-          npm/linux-x64/bin/favicon-generator demo/typescript/assets/favicon.svg "$RUNNER_TEMP/smoke" --no-config
+          npm/linux-x64/bin/favicon-generator examples/typescript/assets/favicon.svg "$RUNNER_TEMP/smoke" --no-config
           test -s "$RUNNER_TEMP/smoke/favicon.ico"
 
       - name: Pack (dry run)

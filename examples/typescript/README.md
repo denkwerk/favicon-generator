@@ -1,4 +1,4 @@
-# demo-typescript
+# example-typescript
 
 Shows how to use `@denkwerk/favicon-generator` in a TypeScript project.
 

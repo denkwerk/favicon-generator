@@ -1,0 +1,23 @@
+{
+  "name": "example-nuxt",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt generate",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt prepare && vue-tsc -b --noEmit",
+    "test": "node test/verify.ts"
+  },
+  "dependencies": {
+    "nuxt": "^4.5.2",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "@denkwerk/nuxt-favicon-generator": "workspace:*",
+    "@types/node": "^24.13.6",
+    "typescript": "^6.0.3",
+    "vue-tsc": "^3.3.11"
+  }
+}

@@ -1,7 +1,8 @@
 # favicon-generator
 
 Generates a complete favicon set from an SVG, a raster image or a Figma component. It's a Rust CLI, distributed
-on npm as [`@denkwerk/favicon-generator`](packages/favicon-generator). See that README for usage and configuration.
+on npm as [`@denkwerk/favicon-generator`](packages/favicon-generator), with a Nuxt module,
+[`@denkwerk/nuxt-favicon-generator`](packages/nuxt-favicon-generator). See their READMEs for usage and configuration.
 
 ## Repository
 
@@ -13,10 +14,12 @@ A [Turborepo](https://turborepo.dev) monorepo that mixes a Cargo workspace (usin
 | [`crates/favicon-generator`](crates/favicon-generator) | `favicon-generator` | The Rust CLI |
 | — | `cargo-workspace` | The Cargo workspace itself (workspace-wide `test`, `lint`, `check`, `format`) |
 | [`packages/favicon-generator`](packages/favicon-generator) | `@denkwerk/favicon-generator` | npm package: `defineConfig`, `generate()`, and the CLI launcher |
-| [`demo/typescript`](demo/typescript) | `demo-typescript` | Example TypeScript project using a `favicon.config.ts` |
+| [`packages/nuxt-favicon-generator`](packages/nuxt-favicon-generator) | `@denkwerk/nuxt-favicon-generator` | Nuxt module: generates, serves and links the favicons |
+| [`examples/typescript`](examples/typescript) | `example-typescript` | TypeScript project using a `favicon.config.ts` and `generate()` |
+| [`examples/nuxt`](examples/nuxt) | `example-nuxt` | Nuxt app using the module |
 
 `@denkwerk/favicon-generator#build` depends on `favicon-generator#build` (see [`turbo.json`](turbo.json)),
-so the demo always runs against a freshly built binary. Inside the monorepo, the npm package uses
+so the examples always run against a freshly built binary. Inside the monorepo, the npm package uses
 `target/{release,debug}/favicon-generator`. Once published, it uses the binary from the platform package
 `@denkwerk/favicon-generator-<os>-<cpu>`.
 
@@ -26,8 +29,9 @@ Requires Node.js ≥ 22.18, pnpm and a Rust toolchain.
 
 ```bash
 pnpm install
-pnpm turbo run build lint test typecheck   # everything
-pnpm turbo run generate                    # run the demo (uses Figma if a token is available)
+pnpm turbo run build lint test typecheck   # everything, including building and checking the Nuxt example
+pnpm turbo run generate                    # run the TypeScript example (uses Figma if a token is available)
+pnpm --filter example-nuxt dev             # the Nuxt example in dev mode
 pnpm turbo run format                      # cargo fmt
 ```
 
@@ -35,13 +39,13 @@ To test the Figma export locally, put a personal access token into `.figma-token
 
 ## Releasing
 
-1. `pnpm set-version 1.2.3` updates the crate, `Cargo.lock` and the npm package. Commit the change.
+1. `pnpm set-version 1.2.3` updates the crate, `Cargo.lock` and both npm packages. Commit the change.
 2. Push a tag: `git tag v1.2.3 && git push origin v1.2.3`.
 
 The [release workflow](.github/workflows/release.yml) then:
 
 - builds the binaries for macOS (arm64, x64), Linux (arm64, x64, static musl) and Windows (x64);
-- publishes the platform packages and `@denkwerk/favicon-generator` to npm (prereleases such as
+- publishes the platform packages, `@denkwerk/favicon-generator` and `@denkwerk/nuxt-favicon-generator` to npm (prereleases such as
   `1.2.3-beta.1` go to the `next` dist-tag);
 - creates a GitHub release with the archived binaries.
 

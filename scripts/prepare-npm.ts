@@ -1,10 +1,11 @@
 // Creates one npm package per platform from the release binaries and wires
-// them into @denkwerk/favicon-generator as optional dependencies.
+// them into @denkwerk/favicon-generator as optional dependencies, and pins the
+// workspace dependency of the Nuxt module to the released version.
 //
 //   node scripts/prepare-npm.ts <artifacts-dir>
 //
 // <artifacts-dir>/<rust-target>/favicon-generator[.exe] -> npm/<os>-<cpu>/
-// Prints the package directories to publish, platform packages first.
+// Prints the package directories to publish in dependency order.
 import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -62,5 +63,16 @@ for (const [target, { os, cpu }] of Object.entries(TARGETS)) {
 main.optionalDependencies = optionalDependencies
 writeFileSync(mainPath, `${JSON.stringify(main, null, 2)}\n`)
 dirs.push(join(root, 'packages/favicon-generator'))
+
+// npm publish does not understand pnpm's `workspace:` protocol.
+const nuxtPath = join(root, 'packages/nuxt-favicon-generator/package.json')
+const nuxt = JSON.parse(readFileSync(nuxtPath, 'utf8'))
+for (const [name, range] of Object.entries<string>(nuxt.dependencies)) {
+  if (range.startsWith('workspace:')) {
+    nuxt.dependencies[name] = `^${main.version}`
+  }
+}
+writeFileSync(nuxtPath, `${JSON.stringify(nuxt, null, 2)}\n`)
+dirs.push(join(root, 'packages/nuxt-favicon-generator'))
 
 console.log(dirs.join('\n'))

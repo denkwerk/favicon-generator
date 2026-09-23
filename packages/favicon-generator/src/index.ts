@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { binaryEnv, resolveBinary } from './binary.js'
 
-export type Snippet = 'html' | 'nuxt'
+export type Snippet = 'html' | 'nuxt' | 'json'
 export type Display = 'fullscreen' | 'standalone' | 'minimal-ui' | 'browser'
 /** `#rgb` or `#rrggbb`. */
 export type HexColor = `#${string}`
@@ -69,6 +69,8 @@ export function defineConfig<const T extends UserConfig>(config: T): T {
 export interface GenerateOptions {
   /** Directory that relative paths in `config` are resolved against. @default process.cwd() */
   cwd?: string
+  /** Suppress progress output; warnings and errors are still printed. @default false */
+  silent?: boolean
 }
 
 /**
@@ -79,7 +81,7 @@ export async function generate(config: FaviconConfig, options: GenerateOptions =
   const child = spawn(resolveBinary(), ['--config', '-'], {
     cwd: options.cwd,
     env: binaryEnv(),
-    stdio: ['pipe', 'inherit', 'inherit'],
+    stdio: ['pipe', options.silent ? 'ignore' : 'inherit', 'inherit'],
   })
   child.stdin.end(JSON.stringify(config))
 

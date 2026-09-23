@@ -11,6 +11,19 @@
       "dependsOn": ["favicon-generator#build"],
       "outputs": ["dist/**"]
     },
+    "@denkwerk/nuxt-favicon-generator#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "example-nuxt#build": {
+      "dependsOn": ["^build"],
+      "env": ["FIGMA_TOKEN", "NUXT_APP_BASE_URL"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.figma-token"],
+      "outputs": [".output/**"]
+    },
+    "example-nuxt#test": {
+      "dependsOn": ["build"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },
