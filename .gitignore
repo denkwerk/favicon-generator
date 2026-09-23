@@ -4,3 +4,4 @@ dist/
 .turbo/
 .figma-token
 /packages/favicon-generator/bin/*/
+/dist-npm/

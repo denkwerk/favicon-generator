@@ -1,12 +1,27 @@
 name: Release
 
-# Push a tag `v<version>` (after `pnpm set-version <version>` is committed) to
-# publish the npm packages and a GitHub release. Run manually for a dry run
-# that builds and packs everything without publishing.
+# Every push to main is a release candidate. semantic-release reads the
+# Conventional Commits since the last tag; if they call for a release, the
+# binaries are built, the npm packages published with trusted publishing
+# (OIDC, no token), and the version bump and CHANGELOG.md committed back,
+# together with a tag and a GitHub release.
+#
+# Run manually for a dry run (builds and packs everything, publishes nothing),
+# or with a tag to publish an existing release to npm again.
 on:
   push:
-    tags: ['v*']
+    branches: [main, next]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Publish this existing tag (e.g. v0.2.0) again. Leave empty for a dry run.
+        required: false
+        default: ''
+
+# One release at a time, never cancelled half-way.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -15,36 +30,62 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
   version:
     name: Resolve version
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # semantic-release checks that it may push, even in a dry run
     outputs:
       version: ${{ steps.version.outputs.version }}
-      npm-tag: ${{ steps.version.outputs.npm-tag }}
-      publish: ${{ steps.version.outputs.publish }}
+      # release: publish a new version; recover: publish an existing tag again;
+      # dry-run: build and pack only; none: nothing to release.
+      mode: ${{ steps.version.outputs.mode }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag }}
+
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
       - id: version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          NEXT_VERSION_FILE: ${{ runner.temp }}/next-version
         run: |
-          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
-            version="${GITHUB_REF_NAME#v}"
+          if [[ -n "$TAG" ]]; then
+            version="${TAG#v}"
             node scripts/set-version.ts --check "$version"
-            echo "publish=true" >> "$GITHUB_OUTPUT"
+            mode=recover
           else
-            version="$(node -p "require('./packages/favicon-generator/package.json').version")"
-            echo "publish=false" >> "$GITHUB_OUTPUT"
+            pnpm exec semantic-release --dry-run
+            if [[ -s "$NEXT_VERSION_FILE" ]]; then
+              version="$(cat "$NEXT_VERSION_FILE")"
+              if [[ "$GITHUB_EVENT_NAME" == push ]]; then mode=release; else mode=dry-run; fi
+            else
+              version="$(node -p "require('./packages/favicon-generator/package.json').version")"
+              if [[ "$GITHUB_EVENT_NAME" == push ]]; then mode=none; else mode=dry-run; fi
+            fi
           fi
-          # Prereleases (1.0.0-beta.1) must not become `latest`.
-          if [[ "$version" == *-* ]]; then npm_tag=next; else npm_tag=latest; fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "npm-tag=$npm_tag" >> "$GITHUB_OUTPUT"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "::notice::version $version, mode $mode"
 
   build:
     name: Build ${{ matrix.target }}
     needs: version
+    if: needs.version.outputs.mode != 'none'
     strategy:
       fail-fast: false
       matrix:
@@ -62,8 +103,19 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
     runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # Bakes the release version into `favicon-generator --version`.
+      - run: node scripts/set-version.ts "$VERSION"
+        shell: bash
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -96,7 +148,7 @@ jobs:
           [[ "${{ matrix.target }}" == *windows* ]] && exe=favicon-generator.exe
           mkdir -p "dist/${{ matrix.target }}"
           cp "target/${{ matrix.target }}/release/$exe" "dist/${{ matrix.target }}/"
-          archive="favicon-generator-v${{ needs.version.outputs.version }}-${{ matrix.target }}"
+          archive="favicon-generator-v$VERSION-${{ matrix.target }}"
           if [[ "$exe" == *.exe ]]; then
             (cd "dist/${{ matrix.target }}" && 7z a "../../$archive.zip" "$exe")
           else
@@ -114,100 +166,110 @@ jobs:
           path: favicon-generator-v*
           if-no-files-found: error
 
-  publish:
-    name: Publish
+  package:
+    name: Pack npm packages
     needs: [version, build]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # GitHub release
-      id-token: write # npm provenance / trusted publishing
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
 
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
-          registry-url: https://registry.npmjs.org
 
       - uses: actions/download-artifact@v8
         with:
           pattern: binary-*
           path: artifacts
+      - run: for dir in artifacts/binary-*; do mv "$dir" "artifacts/${dir#artifacts/binary-}"; done
+
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/set-version.ts "$VERSION"
+      # Only the TypeScript builds: the binaries come from the build job.
+      - run: pnpm --filter @denkwerk/favicon-generator --filter @denkwerk/nuxt-favicon-generator run build
+      - run: node scripts/prepare-npm.ts artifacts
+
+      - name: Smoke test the linux-x64 binary through the package
+        run: |
+          test "$(node packages/favicon-generator/bin/favicon-generator.js --version)" = "favicon-generator $VERSION"
+          node packages/favicon-generator/bin/favicon-generator.js examples/typescript/assets/favicon.svg "$RUNNER_TEMP/smoke" --no-config
+          test -s "$RUNNER_TEMP/smoke/favicon.ico"
+
+      # Checks that the core package ships all binaries (executable, below
+      # 20 MB) and that no `workspace:` range is left.
+      - run: node scripts/pack-npm.ts dist-npm "$VERSION"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: npm-packages
+          path: dist-npm
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    needs: [ci, version, package]
+    if: needs.version.outputs.mode == 'release' || needs.version.outputs.mode == 'recover'
+    runs-on: ubuntu-latest
+    # npm trusted publishing only accepts this workflow in this environment.
+    environment: npm
+    permissions:
+      contents: write # release commit, tag and GitHub release
+      id-token: write # npm trusted publishing and provenance
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag }}
+
+      - uses: pnpm/action-setup@v6
+      # Node.js 24 ships npm 11, which supports trusted publishing (>= 11.5.1).
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: npm-packages
+          path: dist-npm
       - uses: actions/download-artifact@v8
         with:
           pattern: archive-*
           path: archives
           merge-multiple: true
 
-      - run: pnpm install --frozen-lockfile
-      # Only the TypeScript builds: the binaries come from the build job.
-      - run: pnpm --filter @denkwerk/favicon-generator --filter @denkwerk/nuxt-favicon-generator run build
-
-      - name: Prepare npm packages
-        run: |
-          for dir in artifacts/binary-*; do mv "$dir" "artifacts/${dir#artifacts/binary-}"; done
-          node scripts/prepare-npm.ts artifacts > package-dirs.txt
-          cat package-dirs.txt
-
-      - name: Smoke test the linux-x64 binary through the package
-        run: |
-          node packages/favicon-generator/bin/favicon-generator.js --version
-          node packages/favicon-generator/bin/favicon-generator.js examples/typescript/assets/favicon.svg "$RUNNER_TEMP/smoke" --no-config
-          test -s "$RUNNER_TEMP/smoke/favicon.ico"
-
-      # The package ships the binaries of all platforms; fail if one is missing,
-      # not executable, or the tarball grows unexpectedly.
-      - name: Check the package contents
-        working-directory: packages/favicon-generator
-        run: |
-          npm pack --json > "$RUNNER_TEMP/pack.json"
-          node -e '
-            const [pack] = require(process.argv[1])
-            const modes = Object.fromEntries(pack.files.map((file) => [file.path, file.mode]))
-            const binaries = ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64", "win32-x64"]
-              .map((platform) => `bin/${platform}/favicon-generator${platform.startsWith("win32") ? ".exe" : ""}`)
-            for (const binary of binaries) {
-              if (!(binary in modes)) throw new Error(`${binary} is missing from the package`)
-              if ((modes[binary] & 0o111) === 0) throw new Error(`${binary} is not executable`)
-            }
-            const mb = pack.size / 1024 / 1024
-            console.log(`${pack.filename}: ${mb.toFixed(1)} MB packed, ${(pack.unpackedSize / 1024 / 1024).toFixed(1)} MB unpacked`)
-            if (mb > 20) throw new Error("the package is larger than 20 MB")
-          ' "$RUNNER_TEMP/pack.json"
-          rm -f ./*.tgz
-
-      - name: Pack (dry run)
-        if: needs.version.outputs.publish != 'true'
-        run: while read -r dir; do (cd "$dir" && npm pack --dry-run); done < package-dirs.txt
-
-      # The core package first, so the Nuxt module's dependency resolves.
-      # Uses npm trusted publishing when configured, otherwise the NPM_TOKEN secret.
       # Provenance statements are only supported for public repositories.
-      - name: Publish to npm
-        if: needs.version.outputs.publish == 'true'
+      - name: Release
+        if: needs.version.outputs.mode == 'release'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_VERSION: ${{ needs.version.outputs.version }}
           NPM_CONFIG_PROVENANCE: ${{ !github.event.repository.private }}
-          VERSION: ${{ needs.version.outputs.version }}
-          NPM_TAG: ${{ needs.version.outputs.npm-tag }}
-        run: |
-          while read -r dir; do
-            name="$(node -p "require('$dir/package.json').name")"
-            if npm view "$name@$VERSION" version >/dev/null 2>&1; then
-              echo "$name@$VERSION is already published; skipping"
-              continue
-            fi
-            (cd "$dir" && npm publish --access public --tag "$NPM_TAG")
-          done < package-dirs.txt
+        run: pnpm exec semantic-release
 
-      - name: Create GitHub release
-        if: needs.version.outputs.publish == 'true'
+      - name: Publish the existing tag again
+        if: needs.version.outputs.mode == 'recover'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.version.outputs.version }}
+          TAG: ${{ inputs.tag }}
+          NPM_CONFIG_PROVENANCE: ${{ !github.event.repository.private }}
         run: |
-          prerelease=()
-          [[ "$VERSION" == *-* ]] && prerelease=(--prerelease)
-          gh release create "$GITHUB_REF_NAME" archives/* --title "v$VERSION" --generate-notes "${prerelease[@]}"
+          if [[ "$VERSION" == *-* ]]; then npm_tag=next; else npm_tag=latest; fi
+          node scripts/publish-npm.ts dist-npm "$VERSION" "$npm_tag"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" archives/* --clobber
+          else
+            prerelease=()
+            [[ "$VERSION" == *-* ]] && prerelease=(--prerelease)
+            gh release create "$TAG" archives/* --title "v$VERSION" --notes-from-tag --verify-tag "${prerelease[@]}"
+          fi

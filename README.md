@@ -43,22 +43,36 @@ example runs when a `FIGMA_TOKEN` repository secret is set.
 
 ## Releasing
 
-1. `pnpm set-version 1.2.3` updates the crate, `Cargo.lock` and both npm packages. Commit the change.
-2. Push a tag: `git tag v1.2.3 && git push origin v1.2.3`.
+Releases are automatic: every push to `main` runs the [release workflow](.github/workflows/release.yml), and
+[semantic-release](https://semantic-release.gitbook.io) decides from the [Conventional Commits](https://www.conventionalcommits.org)
+since the last tag whether to release and which version:
 
-The [release workflow](.github/workflows/release.yml) then:
+| Commit | While on 0.x | Example |
+|---|---|---|
+| `fix:`, `perf:`, `feat:` | patch, `0.1.0` → `0.1.1` | `feat(nuxt): add a themeColor option` |
+| breaking (`feat!:`, `BREAKING CHANGE:` footer) | minor, `0.1.0` → `0.2.0` | `feat(cli)!: rename --out to --output` |
+| `chore:`, `docs:`, `ci:`, `test:`, `refactor:`, … | no release | |
 
-- builds the binaries for macOS (arm64, x64), Linux (arm64, x64, static musl) and Windows (x64);
-- publishes `@denkwerk/favicon-generator` (with all binaries) and `@denkwerk/nuxt-favicon-generator` to npm (prereleases such as
-  `1.2.3-beta.1` go to the `next` dist-tag);
-- creates a GitHub release with the archived binaries.
+PRs are squash-merged, so their title is the commit message; the [PR title check](.github/workflows/pr-title.yml)
+makes sure it is a Conventional Commit. To leave 0.x, remove the `releaseRules` in
+[`release.config.mjs`](release.config.mjs): the next breaking change then releases 1.0.0.
 
-Running the workflow manually (*Actions → Release → Run workflow*) does a dry run: it builds and packs
-everything but publishes nothing.
+For a release, the workflow
 
-npm authentication uses [trusted publishing](https://docs.npmjs.com/trusted-publishers) when it is configured for
-the packages. Otherwise it uses an `NPM_TOKEN` repository secret, which is needed for the very first publish,
-because trusted publishers can only be set up once a package exists.
+- runs CI and builds the binaries for macOS (arm64, x64), Linux (arm64, x64, static musl) and Windows (x64);
+- publishes `@denkwerk/favicon-generator` (with all binaries) and `@denkwerk/nuxt-favicon-generator` to npm;
+- commits the version bump and [`CHANGELOG.md`](CHANGELOG.md) (`chore(release): x.y.z`), tags it and creates a
+  GitHub release with the release notes and the archived binaries.
+
+Pushes to a `next` branch publish prereleases (`0.2.0-next.1`) to the `next` dist-tag.
+
+Running the workflow manually (*Actions → Release → Run workflow*) is a dry run: it builds and packs everything
+but publishes nothing. With a tag (`v0.2.0`), it publishes that existing release to npm again, e.g. after a failed
+npm publish; versions already on npm are skipped.
+
+npm authentication uses [trusted publishing](https://docs.npmjs.com/trusted-publishers): npm accepts publishes of
+both packages only from `release.yml` in this repository, running in the `npm` GitHub environment. There is no npm
+token, and the packages do not accept one.
 
 ## License
 

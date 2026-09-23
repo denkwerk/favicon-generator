@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 const executable = process.platform === 'win32' ? 'favicon-generator.exe' : 'favicon-generator'
 
-/** Platforms with a prebuilt binary in `bin/<os>-<cpu>/`, see scripts/prepare-npm.ts. */
+/** Platforms with a prebuilt binary in `bin/<os>-<cpu>/`, see scripts/npm-packages.ts. */
 const supportedPlatforms = ['darwin-arm64', 'darwin-x64', 'linux-arm64', 'linux-x64', 'win32-x64']
 
 const platform = `${process.platform}-${process.arch}`
