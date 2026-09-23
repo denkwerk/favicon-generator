@@ -15,8 +15,8 @@ export default defineConfig({
   output: './public/favicons',
   overwrite: true,
   pathPrefix: '/favicons/',
-  appName: 'Favicon Generator Demo',
-  appShortName: 'Demo',
+  appName: 'Favicon Generator CLI Example',
+  appShortName: 'CLI Example',
   themeColor: '#02969c',
   manifestCrossorigin: 'use-credentials',
 })

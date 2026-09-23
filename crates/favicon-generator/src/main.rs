@@ -23,18 +23,32 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     let cwd = std::env::current_dir().context("failed to read the current directory")?;
 
-    let file_config = match &cli.config {
-        Some(path) if path.as_os_str() == "-" => config::load_stdin(&cwd)?,
-        Some(path) => config::load(&cwd.join(path))?,
-        None if cli.no_config => FileConfig::default(),
+    let (path, file_config) = match &cli.config {
+        Some(path) if path.as_os_str() == "-" => (None, config::load_stdin(&cwd)?),
+        Some(path) => {
+            let path = cwd.join(path);
+            let config = config::load(&path)?;
+            (Some(path), config)
+        }
+        None if cli.no_config => (None, FileConfig::default()),
         None => match config::discover(&cwd) {
             Some(path) => {
-                eprintln!("Using {}", path.display());
-                config::load(&path)?
+                if !cli.print_config {
+                    eprintln!("Using {}", path.display());
+                }
+                let config = config::load(&path)?;
+                (Some(path), config)
             }
-            None => FileConfig::default(),
+            None => (None, FileConfig::default()),
         },
     };
+
+    if cli.print_config {
+        let json = serde_json::json!({ "path": path, "config": file_config });
+        println!("{}", serde_json::to_string_pretty(&json)?);
+        return Ok(());
+    }
+
     let settings = Settings::merge(cli, file_config)?;
     generate(&settings)
 }

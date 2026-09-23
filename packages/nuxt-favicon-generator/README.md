@@ -29,6 +29,29 @@ export default defineNuxtConfig({
 
 Remove any `favicon.ico` or other icons from `public/`, because they would conflict with the generated ones. The module warns about this.
 
+## Config file
+
+Instead of (or in addition to) the `favicon` options, the module reads a `favicon.config.ts`, the same file the
+[CLI](../favicon-generator#configuration) uses:
+
+```ts
+// favicon.config.ts
+import { defineConfig } from '@denkwerk/favicon-generator'
+
+export default defineConfig({
+  input: './assets/favicon.svg',
+  appName: 'My App',
+  themeColor: '#02969c',
+})
+```
+
+The lookup rules are the CLI's, starting in the Nuxt `rootDir`. The module uses the first of
+`favicon.config.{js,ts,mjs,mts,cjs,cts,json}` it finds, then checks parent directories up to the nearest one with a
+`package.json` or `.git`. Options in `nuxt.config.ts` take precedence over the file. The file's `output`,
+`overwrite` and `snippets` are ignored because the module decides where files go, and its `pathPrefix` is relative to
+`app.baseURL`. `favicon.config.ts` is type-checked with `nuxt.config.ts`, and in `nuxt dev` editing it restarts Nuxt.
+Add `@denkwerk/favicon-generator` to your dependencies so the file can import `defineConfig`.
+
 ## From Figma
 
 ```ts
@@ -54,10 +77,12 @@ Relative paths are resolved against the Nuxt `rootDir`.
 | `pathPrefix` | `/` | Path under `app.baseURL` to serve the files from. `/` keeps `/favicon.ico` where browsers look for it. |
 | `head` | `true` | Add the `<link>`/`<meta>` tags to every page. |
 | `cache` | `true` | Reuse generated files while options and source are unchanged. Set to `false` to re-export from Figma on every build. |
+| `configFile` | looked up | Path to a specific config file, or `false` to ignore config files. |
 | `enabled` | `true` | Turn the module off, e.g. `enabled: process.env.CI !== 'true'`. |
 
 `app.baseURL` is taken into account in all generated URLs and in `manifest.json`.
 
-## Example
+## Examples
 
-See [`examples/nuxt`](../../examples/nuxt).
+- [`examples/nuxt`](../../examples/nuxt): options in `nuxt.config.ts`
+- [`examples/nuxt-config-file`](../../examples/nuxt-config-file): options in `favicon.config.ts`

@@ -3,8 +3,8 @@ import { binaryEnv, resolveBinary } from './binary.js'
 
 export type Snippet = 'html' | 'nuxt' | 'json'
 export type Display = 'fullscreen' | 'standalone' | 'minimal-ui' | 'browser'
-/** `#rgb` or `#rrggbb`. */
-export type HexColor = `#${string}`
+/** `#rgb` or `#rrggbb`; validated when the favicons are generated. */
+export type HexColor = string
 
 /**
  * Options for favicon-generator. Every option mirrors a CLI flag; flags passed
@@ -61,8 +61,16 @@ export interface FaviconConfig {
 
 export type UserConfig = FaviconConfig | (() => FaviconConfig | Promise<FaviconConfig>)
 
-/** Identity helper that gives `favicon.config.ts` type checking and editor completion. */
-export function defineConfig<const T extends UserConfig>(config: T): T {
+/**
+ * Identity helper that gives `favicon.config.ts` type checking and editor
+ * completion. Not generic on purpose: that would skip excess property checks,
+ * so typos like `themeColr` would go unnoticed. TypeScript does not check a
+ * function's returned object for unknown keys; annotate its return type
+ * (`(): FaviconConfig => ({ ... })`) to get the same checks.
+ */
+export function defineConfig(config: FaviconConfig): FaviconConfig
+export function defineConfig(config: () => FaviconConfig | Promise<FaviconConfig>): () => FaviconConfig | Promise<FaviconConfig>
+export function defineConfig(config: UserConfig): UserConfig {
   return config
 }
 
@@ -95,4 +103,48 @@ export async function generate(config: FaviconConfig, options: GenerateOptions =
       }
     })
   })
+}
+
+export interface LoadConfigOptions {
+  /** Directory to start the lookup from. @default process.cwd() */
+  cwd?: string
+  /** Use this config file instead of looking one up (relative to `cwd`). */
+  configFile?: string
+}
+
+export interface LoadedConfig {
+  /** Absolute path of the config file, or `null` if none was found. */
+  path: string | null
+  /** The config's default export, with paths made absolute. */
+  config: FaviconConfig
+}
+
+/**
+ * Finds and evaluates a `favicon.config.{js,ts,mjs,mts,cjs,cts,json}` with
+ * exactly the rules of the CLI: in `cwd`, then its parents up to the nearest
+ * directory containing a `package.json` or `.git`.
+ */
+export async function loadConfig(options: LoadConfigOptions = {}): Promise<LoadedConfig> {
+  const args = ['--print-config', ...(options.configFile ? ['--config', options.configFile] : [])]
+  const child = spawn(resolveBinary(), args, {
+    cwd: options.cwd,
+    env: binaryEnv(),
+    stdio: ['ignore', 'pipe', 'inherit'],
+  })
+  let stdout = ''
+  child.stdout.setEncoding('utf8').on('data', (chunk: string) => {
+    stdout += chunk
+  })
+
+  await new Promise<void>((resolve, reject) => {
+    child.once('error', reject)
+    child.once('close', (code, signal) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`favicon-generator could not load the config (${signal ?? `exit code ${code}`})`))
+      }
+    })
+  })
+  return JSON.parse(stdout) as LoadedConfig
 }

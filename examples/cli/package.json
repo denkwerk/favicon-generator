@@ -1,9 +1,9 @@
 {
-  "name": "example-typescript",
+  "name": "example-cli",
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "node scripts/generate.ts",
+    "generate": "favicon-generator",
     "typecheck": "tsc"
   },
   "devDependencies": {

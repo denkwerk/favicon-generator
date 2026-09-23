@@ -23,6 +23,14 @@
     "example-nuxt#test": {
       "dependsOn": ["build"]
     },
+    "example-nuxt-config-file#build": {
+      "dependsOn": ["^build"],
+      "env": ["NUXT_APP_BASE_URL"],
+      "outputs": [".output/**"]
+    },
+    "example-nuxt-config-file#test": {
+      "dependsOn": ["build"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },

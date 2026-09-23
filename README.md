@@ -15,8 +15,10 @@ A [Turborepo](https://turborepo.dev) monorepo that mixes a Cargo workspace (usin
 | — | `cargo-workspace` | The Cargo workspace itself (workspace-wide `test`, `lint`, `check`, `format`) |
 | [`packages/favicon-generator`](packages/favicon-generator) | `@denkwerk/favicon-generator` | npm package: `defineConfig`, `generate()`, and the CLI launcher |
 | [`packages/nuxt-favicon-generator`](packages/nuxt-favicon-generator) | `@denkwerk/nuxt-favicon-generator` | Nuxt module: generates, serves and links the favicons |
-| [`examples/typescript`](examples/typescript) | `example-typescript` | TypeScript project using a `favicon.config.ts` and `generate()` |
-| [`examples/nuxt`](examples/nuxt) | `example-nuxt` | Nuxt app using the module |
+| [`examples/cli`](examples/cli) | `example-cli` | The CLI as a package script, configured by `favicon.config.ts` |
+| [`examples/typescript`](examples/typescript) | `example-typescript` | The programmatic `generate()` API |
+| [`examples/nuxt`](examples/nuxt) | `example-nuxt` | Nuxt app with the module configured in `nuxt.config.ts` |
+| [`examples/nuxt-config-file`](examples/nuxt-config-file) | `example-nuxt-config-file` | Nuxt app with the module configured by `favicon.config.ts` |
 
 `@denkwerk/favicon-generator#build` depends on `favicon-generator#build` (see [`turbo.json`](turbo.json)),
 so the examples always run against a freshly built binary. Inside the monorepo, the npm package uses
@@ -30,7 +32,7 @@ Requires Node.js ≥ 22.18, pnpm and a Rust toolchain.
 ```bash
 pnpm install
 pnpm turbo run build lint test typecheck   # everything, including building and checking the Nuxt example
-pnpm turbo run generate                    # run the TypeScript example (uses Figma if a token is available)
+pnpm turbo run generate                    # run the CLI and TypeScript examples (the CLI one uses Figma if a token is available)
 pnpm --filter example-nuxt dev             # the Nuxt example in dev mode
 pnpm turbo run format                      # cargo fmt
 ```

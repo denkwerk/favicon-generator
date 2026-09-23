@@ -48,6 +48,8 @@ or `--no-config` to ignore config files.
 
 Relative paths in the config are resolved against the config file's directory. JS/TS configs are
 evaluated with Node.js, so they can compute values, read env vars, or export an (async) function.
+`defineConfig` reports unknown keys in a config object. For a function, annotate its return type
+(`(): FaviconConfig => ({ ... })`) to get the same check.
 `favicon.config.json` is read without Node.js.
 
 Flags on the command line take precedence over the config file, e.g. `favicon-generator --app-name Staging`.
@@ -98,7 +100,14 @@ import { generate } from '@denkwerk/favicon-generator'
 await generate({ input: 'assets/favicon.svg', output: 'public/favicons' }, { cwd: import.meta.dirname })
 ```
 
-`generate()` does not read config files: the object you pass is the whole config.
+`generate()` does not read config files: the object you pass is the whole config. To use a config file from
+your own tooling, `loadConfig()` finds and evaluates it with the CLI's rules:
+
+```ts
+import { loadConfig } from '@denkwerk/favicon-generator'
+
+const { path, config } = await loadConfig({ cwd: process.cwd() }) // path is null if none was found
+```
 
 ## Output
 

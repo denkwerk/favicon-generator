@@ -5,10 +5,11 @@ import { generate } from '@denkwerk/favicon-generator'
 await generate(
   {
     input: 'assets/favicon.svg',
-    output: 'public/favicons-api',
+    output: 'public/favicons',
     overwrite: true,
-    pathPrefix: '/favicons-api/',
-    appName: 'Favicon Generator Demo',
+    pathPrefix: '/favicons/',
+    appName: 'Favicon Generator TypeScript Example',
+    themeColor: '#02969c',
     snippets: ['html'],
   },
   { cwd: fileURLToPath(new URL('..', import.meta.url)) },

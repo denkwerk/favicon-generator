@@ -1,12 +1,8 @@
 # example-typescript
 
-Shows how to use `@denkwerk/favicon-generator` in a TypeScript project.
+Shows the programmatic API of [`@denkwerk/favicon-generator`](../../packages/favicon-generator):
+[`scripts/generate.ts`](scripts/generate.ts) calls `generate()` with the complete config as an object, so no
+config file is involved. Use this when favicon generation is one step of your own build script.
 
-- [`favicon.config.ts`](favicon.config.ts) is picked up automatically by `pnpm generate` (the `favicon-generator` CLI).
-  It exports the icon from Figma when a token is available (`FIGMA_TOKEN` or `.figma-token` at the repository root),
-  and otherwise uses [`assets/favicon.svg`](assets/favicon.svg).
-- [`scripts/generate.ts`](scripts/generate.ts) uses the programmatic `generate()` API (`pnpm generate:api`).
-- `pnpm typecheck` type-checks both, including the config against `defineConfig`'s types.
-
-Output goes to `public/` (gitignored). From the repository root, run `pnpm turbo run generate`: it builds the Rust
-binary and the npm package first.
+`pnpm generate` writes to `public/favicons` (gitignored), and `pnpm typecheck` type-checks the script. For the CLI with a
+config file, see [`examples/cli`](../cli).

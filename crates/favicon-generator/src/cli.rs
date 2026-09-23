@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Generate favicons, touch icons, a web app manifest and browserconfig.xml
 /// from a single SVG (recommended) or raster image, or from a Figma node.
@@ -27,6 +27,11 @@ pub struct Cli {
     /// Ignore favicon.config.* files.
     #[arg(long)]
     pub no_config: bool,
+
+    /// Print the config file that would be used, as JSON
+    /// (`{ "path": ..., "config": ... }`, paths absolute), and exit.
+    #[arg(long, conflicts_with = "no_config")]
+    pub print_config: bool,
 
     /// Overwrite existing files in the output directory.
     #[arg(short = 'y', long)]
@@ -94,7 +99,7 @@ pub struct Cli {
     pub snippets: Option<Vec<Snippet>>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, ValueEnum, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, ValueEnum, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Display {
     Fullscreen,
@@ -114,7 +119,7 @@ impl Display {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, ValueEnum, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, ValueEnum, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Snippet {
     /// favicon.html with <link>/<meta> tags.

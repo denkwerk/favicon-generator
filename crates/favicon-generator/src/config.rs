@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::cli::{Cli, Display, Snippet, is_figma_url, parse_color, rgb};
 
@@ -50,28 +50,46 @@ process.stdout.write('\n' + MARKER + JSON.stringify(config) + '\n');
 "#;
 
 /// The contents of a config file. Every field mirrors a CLI flag in camelCase.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct FileConfig {
-    #[serde(rename = "$schema")]
+    #[serde(rename = "$schema", skip_serializing)]
     _schema: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub input: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub output: Option<PathBuf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub overwrite: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path_prefix: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub app_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub app_short_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub app_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub theme_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub background_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tile_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub scope: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub display: Option<Display>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub icon_purpose: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub manifest_crossorigin: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub figma_token: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub figma_token_file: Option<PathBuf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub snippets: Option<Vec<Snippet>>,
 }
 

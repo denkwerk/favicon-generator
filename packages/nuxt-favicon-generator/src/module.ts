@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { readdir, readFile, rename, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve } from 'node:path'
-import { type FaviconConfig, generate } from '@denkwerk/favicon-generator'
+import { type FaviconConfig, generate, loadConfig } from '@denkwerk/favicon-generator'
 import { defineNuxtModule, setGlobalHead, useLogger } from '@nuxt/kit'
 import type { NuxtModule } from '@nuxt/schema'
 import { joinURL, withLeadingSlash, withTrailingSlash } from 'ufo'
@@ -24,7 +24,16 @@ export interface ModuleOptions extends Omit<FaviconConfig, 'output' | 'overwrite
    * build. @default true
    */
   cache?: boolean
+  /**
+   * A `favicon.config.{js,ts,mjs,mts,cjs,cts,json}` is looked up like the CLI
+   * does, starting in the Nuxt `rootDir`, and merged below the options set
+   * here. Pass a path to use a specific file, or `false` to ignore config files.
+   */
+  configFile?: string | false
 }
+
+/** Options for the generator: everything except the module's own switches. */
+type GeneratorOptions = Omit<ModuleOptions, 'enabled' | 'head' | 'cache' | 'configFile'>
 
 const NAME = '@denkwerk/nuxt-favicon-generator'
 const require = createRequire(import.meta.url)
@@ -40,24 +49,43 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       nuxt: '>=3.0.0',
     },
   },
+  // Generator options have no defaults here, so that a config file can set them.
   defaults: {
     enabled: true,
-    pathPrefix: '/',
     head: true,
     cache: true,
   },
-  setup(options, nuxt) {
+  async setup(options, nuxt) {
     const logger = useLogger('favicon-generator')
-    const { enabled, head, cache, pathPrefix = '/', ...generatorOptions } = options
+    const { enabled, head, cache, configFile, ...inlineOptions } = options
     if (!enabled) {
-      return
-    }
-    if (!generatorOptions.input) {
-      logger.warn('`favicon.input` is not set, so no favicons are generated.')
       return
     }
 
     const { rootDir } = nuxt.options
+    // Type-check favicon.config.ts along with nuxt.config.ts.
+    nuxt.options.typescript.nodeTsConfig ||= {}
+    nuxt.options.typescript.nodeTsConfig.include ||= []
+    nuxt.options.typescript.nodeTsConfig.include.push(join(relative(nuxt.options.buildDir, rootDir), 'favicon.config.*'))
+
+    // `nuxt prepare` only generates types.
+    if (nuxt.options._prepare) {
+      return
+    }
+
+    const loaded = configFile === false
+      ? { path: null, config: {} }
+      : await loadConfig({ cwd: rootDir, configFile })
+    if (loaded.path) {
+      logger.info(`Using ${relative(rootDir, loaded.path)}`)
+      nuxt.options.watch.push(loaded.path)
+    }
+    const generatorOptions = mergeOptions(loaded.config, inlineOptions)
+    if (!generatorOptions.input) {
+      logger.warn('No `input` is set in the `favicon` options or a favicon.config file, so no favicons are generated.')
+      return
+    }
+
     const isFigma = isFigmaUrl(generatorOptions.input)
     const input = isFigma ? generatorOptions.input : resolve(rootDir, generatorOptions.input)
     if (!isFigma && !existsSync(input)) {
@@ -65,7 +93,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     }
 
     // Served by Nitro under app.baseURL; the generated URLs need both.
-    const routePrefix = withTrailingSlash(withLeadingSlash(pathPrefix))
+    const routePrefix = withTrailingSlash(withLeadingSlash(generatorOptions.pathPrefix ?? '/'))
     const config: FaviconConfig = {
       ...generatorOptions,
       input,
@@ -108,12 +136,8 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     })
 
     // Generating can take a moment (especially from Figma), so it runs after
-    // module setup instead of delaying it. `nuxt prepare` only needs types.
+    // module setup instead of delaying it.
     nuxt.hook('modules:done', async () => {
-      if (nuxt.options._prepare) {
-        return
-      }
-
       if (!cache || !existsSync(headFile)) {
         const start = performance.now()
         await generate(config, { cwd: rootDir, silent: true })
@@ -132,6 +156,17 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 })
 
 export default module
+
+/**
+ * Inline module options take precedence over the config file, like CLI flags
+ * do. The module decides where the files go, so the file's output settings
+ * are dropped.
+ */
+function mergeOptions(fromFile: FaviconConfig, inline: GeneratorOptions): GeneratorOptions {
+  const { output: _output, overwrite: _overwrite, snippets: _snippets, ...rest } = fromFile
+  const defined = Object.fromEntries(Object.entries(inline).filter(([, value]) => value !== undefined))
+  return { ...rest, ...defined }
+}
 
 /** Warns when files in `public/` would compete with the generated ones. */
 function warnAboutShadowedFiles(publicDir: string, routePrefix: string, logger: ReturnType<typeof useLogger>) {
