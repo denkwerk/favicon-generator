@@ -59,3 +59,7 @@ everything but publishes nothing.
 npm authentication uses [trusted publishing](https://docs.npmjs.com/trusted-publishers) when it is configured for
 the packages. Otherwise it uses an `NPM_TOKEN` repository secret, which is needed for the very first publish,
 because trusted publishers can only be set up once a package exists.
+
+## License
+
+[MIT](LICENSE)

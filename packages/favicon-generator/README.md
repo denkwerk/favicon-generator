@@ -124,3 +124,7 @@ const { path, config } = await loadConfig({ cwd: process.cwd() }) // path is nul
 
 For Nuxt, the [`@denkwerk/nuxt-favicon-generator`](../nuxt-favicon-generator) module does all of this for you
 at build time: it generates the files, serves them and adds the tags.
+
+## License
+
+[MIT](../../LICENSE)

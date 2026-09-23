@@ -86,3 +86,7 @@ Relative paths are resolved against the Nuxt `rootDir`.
 
 - [`examples/nuxt`](../../examples/nuxt): options in `nuxt.config.ts`
 - [`examples/nuxt-config-file`](../../examples/nuxt-config-file): options in `favicon.config.ts`
+
+## License
+
+[MIT](../../LICENSE)

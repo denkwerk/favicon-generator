@@ -4,6 +4,7 @@ description = "Generate favicons, touch icons, a web app manifest and browsercon
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
+license.workspace = true
 publish = false
 
 [dependencies]
