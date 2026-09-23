@@ -1,6 +1,6 @@
 {
   "name": "@denkwerk/favicon-generator",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generate favicons, touch icons, a web app manifest and browserconfig.xml from an SVG or a Figma node",
   "license": "MIT",
   "repository": {

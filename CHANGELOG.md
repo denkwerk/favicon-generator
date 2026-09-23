@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1](https://github.com/denkwerk/favicon-generator/compare/v0.1.0...v0.1.1) (2026-09-23)
+
+### Documentation
+
+* **readme:** restructure the READMEs and showcase config formats and output ([7edab29](https://github.com/denkwerk/favicon-generator/commit/7edab296b2a7378ac8ebbd860617393262109128))
+
 ## [0.1.0](https://github.com/denkwerk/favicon-generator/compare/v0.0.0...v0.1.0) (2026-09-23)
 
 ### ⚠ BREAKING CHANGES
