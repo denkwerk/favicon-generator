@@ -224,10 +224,11 @@ jobs:
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
+      # Always the current main, also when publishing a tag again: the
+      # packages come from the package job, and fixes to the release scripts apply.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          ref: ${{ inputs.tag }}
 
       - uses: pnpm/action-setup@v6
       # Node.js 24 ships npm 11, which supports trusted publishing (>= 11.5.1).

@@ -6,7 +6,7 @@
 //
 // Authenticates with npm trusted publishing (OIDC) in GitHub Actions.
 import { execFileSync } from 'node:child_process'
-import { join } from 'node:path'
+import { resolve } from 'node:path'
 import { PACKAGES, tarballName } from './npm-packages.ts'
 
 const [dir, version, tag] = process.argv.slice(2)
@@ -34,7 +34,9 @@ for (const name of PACKAGES) {
     console.log(`${name}@${version} is already published; skipping`)
     continue
   }
-  execFileSync('npm', ['publish', join(dir, tarballName(name, version)), '--access', 'public', '--tag', tag, `--registry=${registry}`], {
+  // Absolute, because npm reads a relative `dir/file.tgz` as a GitHub `owner/repo` shorthand.
+  const tarball = resolve(dir, tarballName(name, version))
+  execFileSync('npm', ['publish', tarball, '--access', 'public', '--tag', tag, `--registry=${registry}`], {
     stdio: 'inherit',
   })
 }
