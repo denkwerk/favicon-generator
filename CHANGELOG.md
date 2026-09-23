@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1](https://github.com/denkwerk/favicon-generator/compare/v0.2.0...v0.2.1) (2026-09-23)
+
+### Documentation
+
+* **readme:** describe the extras as additions ([6faa442](https://github.com/denkwerk/favicon-generator/commit/6faa4428de7c77abea7f6d8cb938c5a9f5301950))
+
 ## [0.2.0](https://github.com/denkwerk/favicon-generator/compare/v0.1.3...v0.2.0) (2026-09-23)
 
 ### ⚠ BREAKING CHANGES
