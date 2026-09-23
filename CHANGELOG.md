@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2](https://github.com/denkwerk/favicon-generator/compare/v0.1.1...v0.1.2) (2026-09-23)
+
+### Features
+
+* update logo ([756d8d9](https://github.com/denkwerk/favicon-generator/commit/756d8d9ec2f43b353a2ea899d1c6876385fe4a02))
+
 ## [0.1.1](https://github.com/denkwerk/favicon-generator/compare/v0.1.0...v0.1.1) (2026-09-23)
 
 ### Documentation
