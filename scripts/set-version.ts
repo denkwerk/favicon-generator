@@ -14,9 +14,10 @@ if (!version || !/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version)) {
 }
 
 const files: { path: string, pattern: RegExp }[] = [
-  // [workspace.package] version, inherited by all crates.
-  { path: 'Cargo.toml', pattern: /(\[workspace\.package\]\nversion = ")([^"]+)(")/ },
-  { path: 'Cargo.lock', pattern: /(name = "favicon-generator"\nversion = ")([^"]+)(")/ },
+  // [workspace.package] version, inherited by all crates. `\r?` because
+  // Windows checkouts have CRLF line endings.
+  { path: 'Cargo.toml', pattern: /(\[workspace\.package\]\r?\nversion = ")([^"]+)(")/ },
+  { path: 'Cargo.lock', pattern: /(name = "favicon-generator"\r?\nversion = ")([^"]+)(")/ },
   { path: 'packages/favicon-generator/package.json', pattern: /(\n {2}"version": ")([^"]+)(")/ },
   { path: 'packages/nuxt-favicon-generator/package.json', pattern: /(\n {2}"version": ")([^"]+)(")/ },
 ]
