@@ -1,7 +1,7 @@
 export default defineNuxtConfig({
   modules: ['@denkwerk/nuxt-favicon-generator'],
 
-  faviconGenerator: {
+  favicon: {
     input: './assets/favicon.svg',
     appName: 'Favicon Generator Nuxt Example',
     appShortName: 'Nuxt Example',

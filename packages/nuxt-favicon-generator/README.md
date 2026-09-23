@@ -19,7 +19,7 @@ npx nuxt module add @denkwerk/nuxt-favicon-generator
 // nuxt.config.ts
 export default defineNuxtConfig({
   modules: ['@denkwerk/nuxt-favicon-generator'],
-  faviconGenerator: {
+  favicon: {
     input: './assets/favicon.svg',
     appName: 'My App',
     themeColor: '#02969c',
@@ -32,7 +32,7 @@ Remove any `favicon.ico` or other icons from `public/`, because they would confl
 ## From Figma
 
 ```ts
-faviconGenerator: {
+favicon: {
   input: 'https://www.figma.com/design/77SgSAGXbDv1Eye6htYdCG/ONE---Assets-Library-NEW?node-id=19938-42',
   // Token from FIGMA_TOKEN, or:
   figmaTokenFile: '.figma-token',

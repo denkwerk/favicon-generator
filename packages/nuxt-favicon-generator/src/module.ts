@@ -35,7 +35,7 @@ const isFigmaUrl = (input: string) => /^(https?:\/\/)?(www\.)?figma\.com\//.test
 const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   meta: {
     name: NAME,
-    configKey: 'faviconGenerator',
+    configKey: 'favicon',
     compatibility: {
       nuxt: '>=3.0.0',
     },
@@ -53,7 +53,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       return
     }
     if (!generatorOptions.input) {
-      logger.warn('`faviconGenerator.input` is not set, so no favicons are generated.')
+      logger.warn('`favicon.input` is not set, so no favicons are generated.')
       return
     }
 
