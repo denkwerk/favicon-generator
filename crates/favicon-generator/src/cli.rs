@@ -13,11 +13,21 @@ use serde::{Deserialize, Serialize};
 #[derive(Parser)]
 #[command(version, about)]
 pub struct Cli {
+    /// Same as --input.
+    #[arg(value_name = "INPUT", conflicts_with = "input")]
+    pub input_arg: Option<String>,
+
+    /// Same as --output.
+    #[arg(value_name = "OUTPUT", conflicts_with = "output")]
+    pub output_arg: Option<PathBuf>,
+
     /// Source image (SVG, PNG, JPEG or WebP; should be square), or a Figma
     /// link with a `node-id` to export that node as SVG via the REST API.
+    #[arg(short, long)]
     pub input: Option<String>,
 
     /// Directory to write the generated files into [default: favicons].
+    #[arg(short, long)]
     pub output: Option<PathBuf>,
 
     /// Config file to use instead of searching for one; `-` reads JSON from stdin.
@@ -86,7 +96,7 @@ pub struct Cli {
     #[arg(long)]
     pub manifest_crossorigin: Option<String>,
 
-    /// Figma personal access token (scope `file_content:read`), used when INPUT is a Figma link.
+    /// Figma personal access token (scope `file_content:read`), used when the input is a Figma link.
     #[arg(long, env = "FIGMA_TOKEN", hide_env_values = true)]
     pub figma_token: Option<String>,
 

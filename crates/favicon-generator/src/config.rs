@@ -249,7 +249,7 @@ impl Settings {
                 }
             };
 
-        let Some(input) = cli.input.or(file.input) else {
+        let Some(input) = cli.input.or(cli.input_arg).or(file.input) else {
             bail!("no input given: pass a file or Figma link, or set `input` in favicon.config.*");
         };
         let app_name = cli
@@ -284,6 +284,7 @@ impl Settings {
             input,
             output: cli
                 .output
+                .or(cli.output_arg)
                 .or(file.output)
                 .unwrap_or_else(|| "favicons".into()),
             overwrite: cli.overwrite || file.overwrite.unwrap_or(false),
@@ -390,6 +391,43 @@ mod tests {
         assert_eq!(s.theme_color, "#000");
         assert_eq!(s.tile_color, "#123");
         assert!(s.snippets.is_empty());
+    }
+
+    #[test]
+    fn input_and_output_as_flags_or_arguments() {
+        let empty = || FileConfig::from_json("{}").unwrap();
+        for args in [
+            &["favicon-generator", "-i", "logo.svg", "-o", "public"][..],
+            &[
+                "favicon-generator",
+                "--input",
+                "logo.svg",
+                "--output",
+                "public",
+            ],
+            &["favicon-generator", "logo.svg", "public"],
+        ] {
+            let s = Settings::merge(Cli::parse_from(args), empty()).unwrap();
+            assert_eq!(
+                (s.input.as_str(), s.output.as_path()),
+                ("logo.svg", Path::new("public"))
+            );
+        }
+
+        let file =
+            FileConfig::from_json(r#"{ "input": "file.svg", "output": "file-out" }"#).unwrap();
+        let s = Settings::merge(
+            Cli::parse_from(["favicon-generator", "-o", "cli-out"]),
+            file,
+        )
+        .unwrap();
+        assert_eq!(
+            (s.input.as_str(), s.output.as_path()),
+            ("file.svg", Path::new("cli-out"))
+        );
+
+        assert!(Cli::try_parse_from(["favicon-generator", "a.svg", "--input", "b.svg"]).is_err());
+        assert!(Cli::try_parse_from(["favicon-generator", "a.svg", "out", "-o", "other"]).is_err());
     }
 
     #[test]
