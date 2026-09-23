@@ -17,8 +17,7 @@
     },
     "example-nuxt#build": {
       "dependsOn": ["^build"],
-      "env": ["FIGMA_TOKEN", "NUXT_APP_BASE_URL"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.figma-token"],
+      "env": ["NUXT_APP_BASE_URL"],
       "outputs": [".output/**"]
     },
     "example-nuxt#test": {
