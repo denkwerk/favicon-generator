@@ -3,4 +3,4 @@ node_modules/
 dist/
 .turbo/
 .figma-token
-/npm/
+/packages/favicon-generator/bin/*/

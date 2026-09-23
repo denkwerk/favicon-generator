@@ -2,8 +2,8 @@
 
 Generates a complete favicon set (PNG sizes, touch icons, `favicon.ico`, web app manifest,
 `browserconfig.xml` and ready-to-paste `<head>` tags) from one SVG, a raster image, or a
-Figma component. The work is done by a native Rust binary that is installed for your platform
-automatically.
+Figma component. The work is done by a native Rust binary; the package ships the prebuilt binaries
+for all supported platforms and picks the right one at runtime.
 
 ```bash
 pnpm add -D @denkwerk/favicon-generator

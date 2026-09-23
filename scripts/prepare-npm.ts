@@ -1,15 +1,17 @@
-// Creates one npm package per platform from the release binaries and wires
-// them into @denkwerk/favicon-generator as optional dependencies, and pins the
-// workspace dependency of the Nuxt module to the released version.
+// Copies the release binaries into @denkwerk/favicon-generator, which ships all
+// platforms in one package, and pins the workspace dependency of the Nuxt module
+// to the released version.
 //
 //   node scripts/prepare-npm.ts <artifacts-dir>
 //
-// <artifacts-dir>/<rust-target>/favicon-generator[.exe] -> npm/<os>-<cpu>/
+// <artifacts-dir>/<rust-target>/favicon-generator[.exe]
+//   -> packages/favicon-generator/bin/<os>-<cpu>/favicon-generator[.exe]
 // Prints the package directories to publish in dependency order.
 import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// Keep in sync with `supportedPlatforms` in packages/favicon-generator/src/binary.ts.
 export const TARGETS: Record<string, { os: string, cpu: string }> = {
   'aarch64-apple-darwin': { os: 'darwin', cpu: 'arm64' },
   'x86_64-apple-darwin': { os: 'darwin', cpu: 'x64' },
@@ -25,13 +27,9 @@ if (!artifacts) {
 }
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-const mainPath = join(root, 'packages/favicon-generator/package.json')
-const main = JSON.parse(readFileSync(mainPath, 'utf8'))
-const outDir = join(root, 'npm')
-rmSync(outDir, { recursive: true, force: true })
+const mainDir = join(root, 'packages/favicon-generator')
+const main = JSON.parse(readFileSync(join(mainDir, 'package.json'), 'utf8'))
 
-const optionalDependencies: Record<string, string> = {}
-const dirs: string[] = []
 for (const [target, { os, cpu }] of Object.entries(TARGETS)) {
   const executable = os === 'win32' ? 'favicon-generator.exe' : 'favicon-generator'
   const binary = join(artifacts, target, executable)
@@ -39,33 +37,16 @@ for (const [target, { os, cpu }] of Object.entries(TARGETS)) {
     throw new Error(`missing binary for ${target}: ${binary}`)
   }
 
-  const name = `${main.name}-${os}-${cpu}`
-  const dir = join(outDir, `${os}-${cpu}`)
-  mkdirSync(join(dir, 'bin'), { recursive: true })
-  copyFileSync(binary, join(dir, 'bin', executable))
-  chmodSync(join(dir, 'bin', executable), 0o755)
-  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({
-    name,
-    version: main.version,
-    description: `The ${os}-${cpu} binary for ${main.name}`,
-    repository: main.repository,
-    license: main.license,
-    os: [os],
-    cpu: [cpu],
-    files: ['bin'],
-  }, null, 2)}\n`)
-  writeFileSync(join(dir, 'README.md'), `# ${name}\n\nThe ${os}-${cpu} binary for [\`${main.name}\`](https://www.npmjs.com/package/${main.name}). Install that package instead.\n`)
-
-  optionalDependencies[name] = main.version
-  dirs.push(dir)
+  const dir = join(mainDir, 'bin', `${os}-${cpu}`)
+  rmSync(dir, { recursive: true, force: true })
+  mkdirSync(dir, { recursive: true })
+  copyFileSync(binary, join(dir, executable))
+  chmodSync(join(dir, executable), 0o755)
 }
 
-main.optionalDependencies = optionalDependencies
-writeFileSync(mainPath, `${JSON.stringify(main, null, 2)}\n`)
-dirs.push(join(root, 'packages/favicon-generator'))
-
 // npm publish does not understand pnpm's `workspace:` protocol.
-const nuxtPath = join(root, 'packages/nuxt-favicon-generator/package.json')
+const nuxtDir = join(root, 'packages/nuxt-favicon-generator')
+const nuxtPath = join(nuxtDir, 'package.json')
 const nuxt = JSON.parse(readFileSync(nuxtPath, 'utf8'))
 for (const [name, range] of Object.entries<string>(nuxt.dependencies)) {
   if (range.startsWith('workspace:')) {
@@ -73,6 +54,5 @@ for (const [name, range] of Object.entries<string>(nuxt.dependencies)) {
   }
 }
 writeFileSync(nuxtPath, `${JSON.stringify(nuxt, null, 2)}\n`)
-dirs.push(join(root, 'packages/nuxt-favicon-generator'))
 
-console.log(dirs.join('\n'))
+console.log([mainDir, nuxtDir].join('\n'))

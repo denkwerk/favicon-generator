@@ -1,22 +1,20 @@
 import { existsSync, statSync } from 'node:fs'
-import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
-const require = createRequire(import.meta.url)
 const executable = process.platform === 'win32' ? 'favicon-generator.exe' : 'favicon-generator'
 
-/** npm package that ships the prebuilt binary for the current platform. */
-export const platformPackage = `@denkwerk/favicon-generator-${process.platform}-${process.arch}`
+/** Platforms with a prebuilt binary in `bin/<os>-<cpu>/`, see scripts/prepare-npm.ts. */
+const supportedPlatforms = ['darwin-arm64', 'darwin-x64', 'linux-arm64', 'linux-x64', 'win32-x64']
+
+const platform = `${process.platform}-${process.arch}`
 
 // Windows on Arm runs the x64 binary through emulation.
-const platformPackages = process.platform === 'win32' && process.arch === 'arm64'
-  ? [platformPackage, '@denkwerk/favicon-generator-win32-x64']
-  : [platformPackage]
+const platforms = platform === 'win32-arm64' ? [platform, 'win32-x64'] : [platform]
 
 /**
  * Locates the native binary, in order:
  * 1. `FAVICON_GENERATOR_BINARY`
- * 2. the platform package installed as an optional dependency
+ * 2. the prebuilt binary for the current platform shipped in this package
  * 3. a `cargo build` output when running inside the monorepo
  */
 export function resolveBinary(): string {
@@ -25,11 +23,10 @@ export function resolveBinary(): string {
     return fromEnv
   }
 
-  for (const name of platformPackages) {
-    try {
-      return require.resolve(`${name}/bin/${executable}`)
-    } catch {
-      // Not installed; try the next option.
+  for (const name of platforms) {
+    const path = fileURLToPath(new URL(`../bin/${name}/${executable}`, import.meta.url))
+    if (existsSync(path)) {
+      return path
     }
   }
 
@@ -42,9 +39,8 @@ export function resolveBinary(): string {
   }
 
   throw new Error(
-    `No favicon-generator binary found for ${process.platform}-${process.arch}. `
-    + `It is installed through the optional dependency ${platformPackage}; make sure optional dependencies `
-    + `are not disabled (--no-optional / --omit=optional), or set FAVICON_GENERATOR_BINARY.`,
+    `No favicon-generator binary found for ${platform}. Prebuilt binaries are available for `
+    + `${supportedPlatforms.join(', ')}; on other platforms, build the binary with cargo and set FAVICON_GENERATOR_BINARY.`,
   )
 }
 

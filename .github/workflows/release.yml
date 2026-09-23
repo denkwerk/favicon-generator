@@ -151,18 +151,38 @@ jobs:
           node scripts/prepare-npm.ts artifacts > package-dirs.txt
           cat package-dirs.txt
 
-      - name: Smoke test the linux-x64 binary
+      - name: Smoke test the linux-x64 binary through the package
         run: |
-          chmod +x npm/linux-x64/bin/favicon-generator
-          npm/linux-x64/bin/favicon-generator --version
-          npm/linux-x64/bin/favicon-generator examples/typescript/assets/favicon.svg "$RUNNER_TEMP/smoke" --no-config
+          node packages/favicon-generator/bin/favicon-generator.js --version
+          node packages/favicon-generator/bin/favicon-generator.js examples/typescript/assets/favicon.svg "$RUNNER_TEMP/smoke" --no-config
           test -s "$RUNNER_TEMP/smoke/favicon.ico"
+
+      # The package ships the binaries of all platforms; fail if one is missing,
+      # not executable, or the tarball grows unexpectedly.
+      - name: Check the package contents
+        working-directory: packages/favicon-generator
+        run: |
+          npm pack --json > "$RUNNER_TEMP/pack.json"
+          node -e '
+            const [pack] = require(process.argv[1])
+            const modes = Object.fromEntries(pack.files.map((file) => [file.path, file.mode]))
+            const binaries = ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64", "win32-x64"]
+              .map((platform) => `bin/${platform}/favicon-generator${platform.startsWith("win32") ? ".exe" : ""}`)
+            for (const binary of binaries) {
+              if (!(binary in modes)) throw new Error(`${binary} is missing from the package`)
+              if ((modes[binary] & 0o111) === 0) throw new Error(`${binary} is not executable`)
+            }
+            const mb = pack.size / 1024 / 1024
+            console.log(`${pack.filename}: ${mb.toFixed(1)} MB packed, ${(pack.unpackedSize / 1024 / 1024).toFixed(1)} MB unpacked`)
+            if (mb > 20) throw new Error("the package is larger than 20 MB")
+          ' "$RUNNER_TEMP/pack.json"
+          rm -f ./*.tgz
 
       - name: Pack (dry run)
         if: needs.version.outputs.publish != 'true'
         run: while read -r dir; do (cd "$dir" && npm pack --dry-run); done < package-dirs.txt
 
-      # Platform packages first, so the main package's optional dependencies resolve.
+      # The core package first, so the Nuxt module's dependency resolves.
       # Uses npm trusted publishing when configured, otherwise the NPM_TOKEN secret.
       # Provenance statements are only supported for public repositories.
       - name: Publish to npm

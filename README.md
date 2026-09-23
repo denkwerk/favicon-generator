@@ -23,8 +23,8 @@ A [Turborepo](https://turborepo.dev) monorepo that mixes a Cargo workspace (usin
 
 `@denkwerk/favicon-generator#build` depends on `favicon-generator#build` (see [`turbo.json`](turbo.json)),
 so the examples always run against a freshly built binary. Inside the monorepo, the npm package uses
-`target/{release,debug}/favicon-generator`. Once published, it uses the binary from the platform package
-`@denkwerk/favicon-generator-<os>-<cpu>`.
+`target/{release,debug}/favicon-generator`. The published package ships the prebuilt binaries of all
+platforms in `bin/<os>-<cpu>/` and picks the one for the current platform.
 
 ## Development
 
@@ -49,7 +49,7 @@ example runs when a `FIGMA_TOKEN` repository secret is set.
 The [release workflow](.github/workflows/release.yml) then:
 
 - builds the binaries for macOS (arm64, x64), Linux (arm64, x64, static musl) and Windows (x64);
-- publishes the platform packages, `@denkwerk/favicon-generator` and `@denkwerk/nuxt-favicon-generator` to npm (prereleases such as
+- publishes `@denkwerk/favicon-generator` (with all binaries) and `@denkwerk/nuxt-favicon-generator` to npm (prereleases such as
   `1.2.3-beta.1` go to the `next` dist-tag);
 - creates a GitHub release with the archived binaries.
 
