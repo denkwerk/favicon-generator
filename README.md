@@ -42,7 +42,7 @@
 Try it without installing anything:
 
 ```bash
-npx @denkwerk/favicon-generator ./logo.svg ./public/favicons --app-name "My App"
+npx @denkwerk/favicon-generator -i ./logo.svg -o ./public/favicons
 ```
 
 ### CLI
@@ -50,6 +50,30 @@ npx @denkwerk/favicon-generator ./logo.svg ./public/favicons --app-name "My App"
 ```bash
 pnpm add -D @denkwerk/favicon-generator
 ```
+
+Configure it with flags, with a config file, or both:
+
+<table>
+<tr>
+<th width="50%">With flags</th>
+<th width="50%">With a config file</th>
+</tr>
+<tr>
+<td valign="top">
+
+```bash
+favicon-generator \
+  -i ./assets/favicon.svg \
+  -o ./public/favicons \
+  --path-prefix /favicons/ \
+  --app-name "My App" \
+  --theme-color "#02969c"
+```
+
+No file needed; every option has a flag.
+
+</td>
+<td valign="top">
 
 ```ts
 // favicon.config.ts
@@ -64,11 +88,14 @@ export default defineConfig({
 })
 ```
 
-```json
-{ "scripts": { "favicons": "favicon-generator" } }
-```
+Then run `favicon-generator` without arguments.
 
-Then run `pnpm favicons` and paste `public/favicons/favicon.html` into your `<head>`.
+</td>
+</tr>
+</table>
+
+Flags override the config file, so `favicon-generator --app-name Staging` reuses the file with another name.
+Then paste the generated `public/favicons/favicon.html` into your `<head>`.
 
 ### Nuxt
 
@@ -107,7 +134,7 @@ The same options work everywhere. Pick the format that fits your project:
 | `favicon.config.ts` · `.mts` · `.cts` | Node.js (≥ 22.18) | typed config with autocompletion |
 | `favicon.config.js` · `.mjs` · `.cjs` | Node.js | computed values, env vars, async functions |
 | `favicon.config.json` | the binary itself | projects without Node.js |
-| CLI flags (`--app-name`, `--theme-color`, …) | the binary itself | one-offs; they override the config file |
+| CLI flags (`-i`, `-o`, `--app-name`, …) | the binary itself | scripts and one-offs; they override the config file |
 | `favicon` in `nuxt.config.ts` | Nuxt | Nuxt apps; overrides `favicon.config.*` |
 
 The config file is looked up in the current directory and its parents, up to the nearest `package.json` or `.git`.
@@ -142,7 +169,7 @@ or a gitignored `figmaTokenFile`.
 </details>
 
 <details>
-<summary><b>A JSON config, or flags only</b></summary>
+<summary><b>A JSON config</b></summary>
 
 <br>
 
@@ -156,11 +183,6 @@ or a gitignored `figmaTokenFile`.
 }
 ```
 
-```bash
-favicon-generator ./assets/favicon.svg ./public/favicons \
-  --path-prefix /favicons/ --app-name "My App" --theme-color "#02969c" --overwrite
-```
-
 </details>
 
 <details>
@@ -170,8 +192,8 @@ favicon-generator ./assets/favicon.svg ./public/favicons \
 
 | Option | CLI flag | Default |
 | --- | --- | --- |
-| `input` | `<INPUT>` | *(required)* SVG, PNG, JPEG or WebP file, or a Figma link with `node-id` |
-| `output` | `[OUTPUT]` | `favicons` |
+| `input` | `-i, --input`, or the first argument | *(required)* SVG, PNG, JPEG or WebP file, or a Figma link with `node-id` |
+| `output` | `-o, --output`, or the second argument | `favicons` |
 | `overwrite` | `-y, --overwrite` | `false` |
 | `pathPrefix` | `-p, --path-prefix` | `/` |
 | `appName` | `-n, --app-name` | `App` |

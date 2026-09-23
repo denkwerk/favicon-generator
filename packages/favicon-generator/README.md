@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="#configuration">Configuration</a> · <a href="#options">Options</a> · <a href="#from-figma">Figma</a> · <a href="#programmatic-api">API</a> · <a href="#output">Output</a> · <a href="https://github.com/denkwerk/favicon-generator">Overview</a>
+  <a href="#usage">Usage</a> · <a href="#configuration">Configuration</a> · <a href="#options">Options</a> · <a href="#from-figma">Figma</a> · <a href="#programmatic-api">API</a> · <a href="#output">Output</a> · <a href="https://github.com/denkwerk/favicon-generator">Overview</a>
 </p>
 
 Generates a complete favicon set (PNG sizes, touch icons, `favicon.ico`, web app manifest,
@@ -29,6 +29,17 @@ pnpm add -D @denkwerk/favicon-generator
 
 Requires Node.js ≥ 22.18 (for TypeScript config files). Prebuilt binaries cover macOS (arm64, x64),
 Linux (arm64, x64) and Windows (x64).
+
+## Usage
+
+Pass everything as flags:
+
+```bash
+favicon-generator -i ./assets/favicon.svg -o ./public/favicons --path-prefix /favicons/ --app-name "My App"
+```
+
+`favicon-generator ./assets/favicon.svg ./public/favicons` is short for `-i … -o …`. Every option has a flag,
+see [Options](#options). To keep the options in the project instead, use a config file.
 
 ## Configuration
 
@@ -76,8 +87,8 @@ Flags on the command line take precedence over the config file, e.g. `favicon-ge
 
 | Option | CLI flag | Default |
 | --- | --- | --- |
-| `input` | `<INPUT>` | *(required)*: an SVG/PNG/JPEG/WebP file, or a Figma link with `node-id` |
-| `output` | `[OUTPUT]` | `favicons` |
+| `input` | `-i, --input`, or the first argument | *(required)*: an SVG/PNG/JPEG/WebP file, or a Figma link with `node-id` |
+| `output` | `-o, --output`, or the second argument | `favicons` |
 | `overwrite` | `-y, --overwrite` | `false` |
 | `pathPrefix` | `-p, --path-prefix` | `/` |
 | `appName` | `-n, --app-name` | `App` |
