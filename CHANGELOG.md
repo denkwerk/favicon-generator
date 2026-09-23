@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.2](https://github.com/denkwerk/favicon-generator/compare/v0.2.1...v0.2.2) (2026-09-23)
+
+### Features
+
+* **core:** export mergeConfig to layer options over a config file ([17adbc4](https://github.com/denkwerk/favicon-generator/commit/17adbc451d7c37b64a3f7fe6b7e28a8aad4a3e96))
+* **unplugin:** add a Vite, Rollup, Rolldown, webpack and Rspack plugin ([ae6d66f](https://github.com/denkwerk/favicon-generator/commit/ae6d66f1bf6ec3d798533692e60a1da7fddef901))
+
+### Bug Fixes
+
+* **unplugin:** emit webpack and Rspack assets in processAssets ([2fc6633](https://github.com/denkwerk/favicon-generator/commit/2fc66332891a7423a02cc5a209b582636a643f6d))
+
+### Documentation
+
+* add Vite config file and tsdown library examples ([5a4edd5](https://github.com/denkwerk/favicon-generator/commit/5a4edd5323cba9447e1f6e5d9b17b2230cac6798))
+* move the contributing guide to CONTRIBUTING.md ([d4cafd4](https://github.com/denkwerk/favicon-generator/commit/d4cafd4e3333206e3b77e1483d1c8b960a8d1bf2))
+
 ## [0.2.1](https://github.com/denkwerk/favicon-generator/compare/v0.2.0...v0.2.1) (2026-09-23)
 
 ### Documentation
