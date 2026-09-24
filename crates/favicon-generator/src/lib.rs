@@ -121,52 +121,72 @@ fn read_input(settings: &Settings, cache: Option<&Cache>) -> Result<Input> {
     }
 
     let node = figma::NodeRef::parse_url(&settings.input)?;
-    let cached = cache.and_then(|cache| cache.figma_export(&node));
     let token = figma::resolve_token(
         settings.figma_token.as_deref(),
         settings.figma_token_file.as_deref(),
     );
-    let svg = match (cache, cached) {
+    let exporting = || {
+        eprintln!(
+            "Exporting node {} from Figma file {}…",
+            node.node_id, node.file_key
+        );
+    };
+    let store = |cache: &Cache, version: &str, svg: &[u8]| {
+        if let Err(error) = cache.store_figma_export(&node, version, svg) {
+            eprintln!("warning: could not write the cache: {error:#}");
+        }
+    };
+
+    let svg = match (cache, cache.and_then(|cache| cache.figma_export(&node))) {
         (None, _) => {
-            eprintln!(
-                "Exporting node {} from Figma file {}…",
-                node.node_id, node.file_key
-            );
+            exporting();
             figma::fetch_svg(&node, &token?)?
         }
-        (Some(cache), cached) => {
+        // Nothing to reuse: the version for the cache is requested while
+        // exporting, not before. Both requests see the file as of the same
+        // moment, unless it is edited within that split second.
+        (Some(cache), None) => {
+            let token = token?;
+            exporting();
+            let (version, svg) = std::thread::scope(|scope| {
+                let version = scope.spawn(|| figma::file_version(&node, &token));
+                let svg = figma::fetch_svg(&node, &token);
+                (version.join().expect("the version request panicked"), svg)
+            });
+            let svg = svg?;
+            match version {
+                Ok(version) => store(cache, &version, &svg),
+                Err(error) => eprintln!("warning: could not cache the Figma export: {error:#}"),
+            }
+            svg
+        }
+        (Some(cache), Some(cached)) => {
             let version = token
                 .as_deref()
                 .map_err(|e| anyhow::anyhow!("{e:#}"))
                 .and_then(|token| figma::file_version(&node, token));
-            match (version, cached) {
-                (Ok(version), Some(cached)) if version == cached.version => {
+            match version {
+                Ok(version) if version == cached.version => {
                     eprintln!(
                         "Figma file {} is unchanged; reusing the export of node {}",
                         node.file_key, node.node_id
                     );
                     cached.svg
                 }
-                (Ok(version), _) => {
-                    eprintln!(
-                        "Exporting node {} from Figma file {}…",
-                        node.node_id, node.file_key
-                    );
+                Ok(version) => {
+                    exporting();
                     let svg = figma::fetch_svg(&node, &token?)?;
-                    if let Err(error) = cache.store_figma_export(&node, &version, &svg) {
-                        eprintln!("warning: could not write the cache: {error:#}");
-                    }
+                    store(cache, &version, &svg);
                     svg
                 }
                 // Offline, rate limited or without a token: an older export beats failing.
-                (Err(error), Some(cached)) => {
+                Err(error) => {
                     eprintln!(
                         "warning: could not check Figma for changes, reusing the export from {}: {error:#}",
                         age(cached.exported)
                     );
                     cached.svg
                 }
-                (Err(error), None) => return Err(error),
             }
         }
     };

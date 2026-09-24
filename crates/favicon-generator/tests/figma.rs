@@ -10,16 +10,18 @@ use common::{LOGO, Project};
 
 type Requests = mpsc::Receiver<(String, Option<String>)>;
 
-/// A mock server answering one request per response, in order. `responses`
-/// gets the server's base URL, so a response can point back at it. Reports
-/// each request's first line and `X-Figma-Token` header.
-fn mock(responses: impl FnOnce(&str) -> Vec<(u16, String)>) -> (String, Requests) {
+/// A mock server with one response per expected request, as `(path prefix,
+/// status, body)`: each request gets the first unused response whose prefix
+/// matches its path (the version and the export are requested at the same
+/// time). `responses` gets the server's base URL, so a response can point back
+/// at it. Reports each request's first line and `X-Figma-Token` header.
+fn mock(responses: impl FnOnce(&str) -> Vec<(&'static str, u16, String)>) -> (String, Requests) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let base = format!("http://{}", listener.local_addr().unwrap());
-    let responses = responses(&base);
+    let mut responses = responses(&base);
     let (tx, rx) = mpsc::channel();
     std::thread::spawn(move || {
-        for (status, body) in responses {
+        while !responses.is_empty() {
             let (mut stream, _) = listener.accept().unwrap();
             let mut reader = BufReader::new(stream.try_clone().unwrap());
             let mut request_line = String::new();
@@ -38,6 +40,17 @@ fn mock(responses: impl FnOnce(&str) -> Vec<(u16, String)>) -> (String, Requests
                     token = Some(value.trim().to_owned());
                 }
             }
+            let path = request_line.split(' ').nth(1).unwrap_or_default();
+            let (status, body) = match responses
+                .iter()
+                .position(|(prefix, ..)| path.starts_with(prefix))
+            {
+                Some(index) => {
+                    let (_, status, body) = responses.remove(index);
+                    (status, body)
+                }
+                None => (500, format!("unexpected request {path}")),
+            };
             tx.send((request_line.trim().to_owned(), token)).unwrap();
             write!(
                 stream,
@@ -49,6 +62,10 @@ fn mock(responses: impl FnOnce(&str) -> Vec<(u16, String)>) -> (String, Requests
     });
     (base, rx)
 }
+
+const IMAGES: &str = "/v1/images/";
+const NODES: &str = "/v1/files/";
+const DOWNLOAD: &str = "/download.svg";
 
 const LINK: &str = "https://www.figma.com/design/FILEKEY/Assets?node-id=12-34";
 
@@ -68,10 +85,11 @@ fn exports_the_node_as_svg() {
     let (base, requests) = mock(|base| {
         vec![
             (
+                IMAGES,
                 200,
                 format!(r#"{{ "err": null, "images": {{ "12:34": "{base}/download.svg" }} }}"#),
             ),
-            (200, LOGO.to_owned()),
+            (DOWNLOAD, 200, LOGO.to_owned()),
         ]
     });
     let project = Project::new();
@@ -103,6 +121,7 @@ fn exports_the_node_as_svg() {
 fn reports_api_errors_with_a_hint() {
     let (base, _requests) = mock(|_| {
         vec![(
+            IMAGES,
             403,
             r#"{ "status": 403, "err": "Invalid token" }"#.to_owned(),
         )]
@@ -127,20 +146,22 @@ fn requires_a_token() {
     );
 }
 
-fn nodes_response(version: &str) -> (u16, String) {
+fn nodes_response(version: &str) -> (&'static str, u16, String) {
     (
+        NODES,
         200,
         format!(r#"{{ "version": "{version}", "nodes": {{ "12:34": {{ "document": {{}} }} }} }}"#),
     )
 }
 
-fn export_responses(base: &str, svg: &str) -> [(u16, String); 2] {
+fn export_responses(base: &str, svg: &str) -> [(&'static str, u16, String); 2] {
     [
         (
+            IMAGES,
             200,
             format!(r#"{{ "err": null, "images": {{ "12:34": "{base}/download.svg" }} }}"#),
         ),
-        (200, svg.to_owned()),
+        (DOWNLOAD, 200, svg.to_owned()),
     ]
 }
 
@@ -172,13 +193,15 @@ fn reuses_the_export_while_the_file_is_unchanged() {
     });
     let project = Project::new();
 
-    let (paths, _) = run_cached(&project, &base, &requests);
+    let (mut paths, _) = run_cached(&project, &base, &requests);
+    // The version is requested along with the export.
+    paths.sort();
     assert_eq!(
         paths,
         [
+            "/download.svg",
             "/v1/files/FILEKEY/nodes",
-            "/v1/images/FILEKEY",
-            "/download.svg"
+            "/v1/images/FILEKEY"
         ]
     );
 
@@ -227,6 +250,7 @@ fn falls_back_to_the_cached_export_when_figma_fails() {
         let mut responses = vec![nodes_response("1")];
         responses.extend(export_responses(base, LOGO));
         responses.push((
+            NODES,
             429,
             r#"{ "status": 429, "err": "Rate limit exceeded" }"#.into(),
         ));
