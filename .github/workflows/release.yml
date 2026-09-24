@@ -28,6 +28,8 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  # The mise release that installs the tools; also in ci.yml.
+  MISE_VERSION: 2026.9.11
 
 jobs:
   ci:
@@ -51,11 +53,13 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.tag }}
 
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: jdx/mise-action@v4
         with:
-          node-version: 24
-          cache: pnpm
+          version: ${{ env.MISE_VERSION }}
+          install_args: node
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
       - run: pnpm install --frozen-lockfile
 
       - id: version
@@ -110,27 +114,21 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
-      - uses: actions/setup-node@v7
+      # Node.js, and for the static musl binaries zig and cargo-zigbuild.
+      - uses: jdx/mise-action@v4
         with:
-          node-version: 24
+          version: ${{ env.MISE_VERSION }}
+          install_args: node ${{ matrix.zigbuild && 'zig aqua:rust-cross/cargo-zigbuild' || '' }}
+      # The toolchain from rust-toolchain.toml (see ci.yml), plus the target.
+      - run: rustup toolchain install && rustup target add ${{ matrix.target }}
+
       # Bakes the release version into `favicon-generator --version`.
       - run: node scripts/set-version.ts "$VERSION"
         shell: bash
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
-
-      # Static musl binaries, cross-compiled with zig as the linker.
-      - if: matrix.zigbuild
-        uses: mlugg/setup-zig@v2
-        with:
-          version: 0.14.1
-      - if: matrix.zigbuild
-        run: pipx install cargo-zigbuild
 
       - name: Build
         shell: bash
@@ -177,11 +175,13 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: jdx/mise-action@v4
         with:
-          node-version: 24
-          cache: pnpm
+          version: ${{ env.MISE_VERSION }}
+          install_args: node
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
 
       - uses: actions/download-artifact@v8
         with:
@@ -231,13 +231,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6
       # Node.js 24 ships npm 11, which supports trusted publishing (>= 11.5.1).
-      - uses: actions/setup-node@v7
+      - uses: jdx/mise-action@v4
         with:
-          node-version: 24
-          cache: pnpm
-          registry-url: https://registry.npmjs.org
+          version: ${{ env.MISE_VERSION }}
+          install_args: node
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
       - run: pnpm install --frozen-lockfile
 
       - uses: actions/download-artifact@v8

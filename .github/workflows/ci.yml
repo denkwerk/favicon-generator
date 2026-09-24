@@ -15,6 +15,8 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
+  # The mise release that installs the tools; also in release.yml.
+  MISE_VERSION: 2026.9.11
   FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
 
 jobs:
@@ -31,15 +33,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: jdx/mise-action@v4
+        with:
+          version: ${{ env.MISE_VERSION }}
+          install_args: node
+      # The toolchain and components from rust-toolchain.toml, with the
+      # runner's rustup: mise's cache would only restore a link to it.
+      - run: rustup toolchain install
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
         with:
-          node-version: 24
-          cache: pnpm
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
+          cache: true
       - uses: Swatinem/rust-cache@v2
 
       - run: pnpm install --frozen-lockfile
