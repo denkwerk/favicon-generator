@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/denkwerk/favicon-generator/compare/v0.2.2...v0.2.3) (2026-09-24)
+
+### Bug Fixes
+
+* **npm:** add keywords, homepage, bugs and author to the packages ([5d0653d](https://github.com/denkwerk/favicon-generator/commit/5d0653d4f0e3156fd2650dc3c5063a2b46b2f9fd))
+* **npm:** list the Nuxt module and bundler plugins in every package's keywords ([16df325](https://github.com/denkwerk/favicon-generator/commit/16df325a26407078a21a981d4da2cdfb82a17ed5))
+
 ## [0.2.2](https://github.com/denkwerk/favicon-generator/compare/v0.2.1...v0.2.2) (2026-09-23)
 
 ### Features
