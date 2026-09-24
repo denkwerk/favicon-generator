@@ -48,11 +48,19 @@ jobs:
         if: runner.os == 'Linux'
         run: cargo fmt --all -- --check
 
-      # Builds the crate, the npm packages and the Nuxt examples (which run the
-      # module), lints and tests the Cargo workspace, type-checks the examples,
-      # checks the Nuxt output and runs the CLI and TypeScript examples.
-      # example-cli-figma needs a Figma token; it runs in its own step below.
-      - run: pnpm turbo run build lint test typecheck generate --filter='!example-cli-figma'
+      # Before everything that runs the binary: `cargo test` builds the crate
+      # with its dev-dependencies, which changes the features of shared
+      # dependencies, so it relinks target/debug/favicon-generator. On Windows
+      # that fails while another task is running the executable.
+      - name: Lint and test the crate
+        run: pnpm turbo run lint test --filter=favicon-generator
+
+      # Builds the crate, the npm packages and the examples (the Nuxt and Vite
+      # ones run the module and the plugin), type-checks them, checks their
+      # output and runs the CLI and TypeScript examples. The crate's own lint
+      # and tests ran above. example-cli-figma needs a Figma token; it runs in
+      # its own step below.
+      - run: pnpm turbo run build lint test typecheck generate --filter='!example-cli-figma' --filter='!favicon-generator'
       - run: pnpm turbo run typecheck --filter=example-cli-figma
 
       - name: Figma example

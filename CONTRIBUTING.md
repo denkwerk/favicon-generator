@@ -31,8 +31,12 @@ the next release (see [Releasing](#releasing)).
 | `packages/nuxt-favicon-generator/test` | option merging; builds and serves [fixture apps](packages/nuxt-favicon-generator/test/fixtures) and checks files and tags | `pnpm test` |
 | `packages/unplugin-favicon-generator/test` | real Vite (build, SSR build, dev server), Rollup, Rolldown, webpack and Rspack builds of [fixtures](packages/unplugin-favicon-generator/test/fixtures): emitted files, tags, `virtual:favicons`, config files, regeneration in dev | `pnpm test` |
 
-`pnpm turbo run test` runs all of them, as CI does on Linux, macOS and Windows. After an intended output change,
-review and accept the snapshots with [`cargo insta review`](https://insta.rs) (or `INSTA_UPDATE=always cargo test`).
+`pnpm turbo run test` runs all of them, as CI does on Linux, macOS and Windows. On Windows, run the crate's tests
+first (`pnpm turbo run test --filter=favicon-generator`), as CI does: `cargo test` relinks
+`target/debug/favicon-generator.exe`, which fails while another task is running it.
+
+After an intended output change, review and accept the snapshots with [`cargo insta review`](https://insta.rs)
+(or `INSTA_UPDATE=always cargo test`).
 [`schema.json`](packages/favicon-generator/schema.json) is generated from the Rust config types:
 `UPDATE_SCHEMA=1 cargo test` rewrites it.
 
