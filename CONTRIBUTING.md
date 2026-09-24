@@ -32,14 +32,14 @@ the Figma example runs when a `FIGMA_TOKEN` repository secret is set.
 | --- | --- | --- |
 | Rust, clippy, rustfmt | [`rust-toolchain.toml`](rust-toolchain.toml) | read by rustup, IDEs and mise |
 | pnpm | `packageManager` in [`package.json`](package.json) | pnpm switches to that version itself |
-| Node.js, zig, cargo-zigbuild, cargo-insta | [`mise.toml`](mise.toml), with checksums in [`mise.lock`](mise.lock) | zig and cargo-zigbuild build the static Linux binaries of a release |
+| Node.js, zig, cargo-zigbuild | [`mise.toml`](mise.toml), with checksums in [`mise.lock`](mise.lock) | zig and cargo-zigbuild build the static Linux binaries of a release |
 | mise itself in CI | `MISE_VERSION` in [`ci.yml`](.github/workflows/ci.yml) and [`release.yml`](.github/workflows/release.yml) | |
 
 CI and the release workflow install the same versions. Dependabot proposes new Rust releases and GitHub Actions;
 the tools in `mise.toml` are bumped by hand:
 
 ```bash
-mise outdated --bump                   # newer versions, also across majors
+mise outdated --bump   # newer versions, also across majors
 # edit the versions in mise.toml, then update the checksums for all CI platforms:
 mise lock --platform linux-x64,linux-arm64,macos-arm64,macos-x64,windows-x64
 ```
@@ -68,8 +68,8 @@ the next release (see [Releasing](#releasing)).
 first (`pnpm turbo run test --filter=favicon-generator`), as CI does: `cargo test` relinks
 `target/debug/favicon-generator.exe`, which fails while another task is running it.
 
-After an intended output change, review and accept the snapshots with [`cargo insta review`](https://insta.rs)
-(or `INSTA_UPDATE=always cargo test`).
+After an intended output change, accept the snapshots with `INSTA_UPDATE=always cargo test`, or review them one by
+one with [`cargo insta review`](https://insta.rs/docs/cli/) (`cargo install cargo-insta`).
 [`schema.json`](packages/favicon-generator/schema.json) is generated from the Rust config types:
 `UPDATE_SCHEMA=1 cargo test` rewrites it.
 

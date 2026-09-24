@@ -7,8 +7,6 @@ lockfile = true
 
 [tools]
 node = "24.21.0"
-# Snapshot tests: `cargo insta review`. Match the insta version in Cargo.toml.
-cargo-insta = "1.48.0"
 # Static musl release binaries, cross-compiled with zig as the linker.
 zig = "0.14.1"
 "aqua:rust-cross/cargo-zigbuild" = "0.23.4"
