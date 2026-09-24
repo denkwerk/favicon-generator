@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { $fetch, fetch, setup } from '@nuxt/test-utils/e2e'
 import { describe, expect, it } from 'vitest'
 import { fixture, headTags, isFile } from './helpers'
@@ -19,5 +21,12 @@ describe('defaults', async () => {
     expect(tags).toContain('<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">')
     expect(tags).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png">')
     expect(tags.join('\n')).not.toMatch(/manifest|theme-color|msapplication/)
+  })
+
+  it('keeps the generated files in node_modules/.cache/favicon-generator', () => {
+    const cacheDir = join(fixture('basic'), 'node_modules/.cache/favicon-generator')
+    expect(readdirSync(join(cacheDir, 'nuxt'))).toHaveLength(1)
+    // The generator's own cache.
+    expect(readdirSync(join(cacheDir, 'outputs')).length).toBeGreaterThan(0)
   })
 })

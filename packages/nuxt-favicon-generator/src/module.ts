@@ -21,8 +21,9 @@ export interface ModuleOptions extends Omit<FaviconConfig, '$schema' | 'output' 
   head?: boolean
   /**
    * Reuse the generated files while the options and the input file are
-   * unchanged. Figma exports are cached too; set `false` to export on every
-   * build. @default true
+   * unchanged. A Figma export is reused while the Figma file's version is
+   * unchanged, which one small API request checks on every build; set `false`
+   * to export on every build. @default true
    */
   cache?: boolean
   /**
@@ -34,7 +35,7 @@ export interface ModuleOptions extends Omit<FaviconConfig, '$schema' | 'output' 
 }
 
 /** Options for the generator: everything except the module's own switches. */
-export type GeneratorOptions = Omit<ModuleOptions, 'enabled' | 'head' | 'cache' | 'configFile'>
+export type GeneratorOptions = Omit<ModuleOptions, 'enabled' | 'head' | 'configFile'>
 
 const NAME = '@denkwerk/nuxt-favicon-generator'
 const require = createRequire(import.meta.url)
@@ -54,11 +55,10 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   defaults: {
     enabled: true,
     head: true,
-    cache: true,
   },
   async setup(options, nuxt) {
     const logger = useLogger('favicon-generator')
-    const { enabled, head, cache, configFile, ...inlineOptions } = options
+    const { enabled, head, configFile, ...inlineOptions } = options
     if (!enabled) {
       return
     }
@@ -95,25 +95,32 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     // Served by Nitro under app.baseURL; the generated URLs need both.
     const routePrefix = withTrailingSlash(withLeadingSlash(generatorOptions.pathPrefix ?? '/'))
+    const cache = generatorOptions.cache ?? true
+    const cacheRoot = resolve(rootDir, generatorOptions.cacheDir ?? 'node_modules/.cache/favicon-generator')
     const config: FaviconConfig = {
       ...generatorOptions,
       input,
+      cache,
+      cacheDir: cacheRoot,
       figmaTokenFile: generatorOptions.figmaTokenFile && resolve(rootDir, generatorOptions.figmaTokenFile),
       pathPrefix: withTrailingSlash(joinURL(nuxt.options.app.baseURL, routePrefix)),
       overwrite: true,
       snippets: ['json'],
     }
 
-    // The cache key covers everything that affects the output, but not the token.
+    // The key covers everything that affects the output, but not the token or
+    // where the cache is.
+    // A Figma export can change without the options changing, so the generator
+    // checks it on every build (and reuses what it can from its own cache).
     const hash = createHash('sha256')
-      .update(JSON.stringify({ generatorVersion, config: { ...config, figmaToken: undefined } }))
+      .update(JSON.stringify({ generatorVersion, config: { ...config, figmaToken: undefined, cache: undefined, cacheDir: undefined } }))
       .update(isFigma ? '' : readFileSync(input))
       .digest('hex')
       .slice(0, 16)
-    const cacheRoot = join(rootDir, 'node_modules/.cache/nuxt-favicon-generator')
+    const outputsRoot = join(cacheRoot, 'nuxt')
     // <hash>/public is served; <hash>/head.json holds the tags.
-    const publicDir = join(cacheRoot, hash, 'public')
-    const headFile = join(cacheRoot, hash, 'head.json')
+    const publicDir = join(outputsRoot, hash, 'public')
+    const headFile = join(outputsRoot, hash, 'head.json')
     config.output = publicDir
 
     warnAboutShadowedFiles(resolve(rootDir, nuxt.options.dir.public), routePrefix, logger)
@@ -139,13 +146,13 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // Generating can take a moment (especially from Figma), so it runs after
     // module setup instead of delaying it.
     nuxt.hook('modules:done', async () => {
-      if (!cache || !existsSync(headFile)) {
+      if (!cache || isFigma || !existsSync(headFile)) {
         const start = performance.now()
         await generate(config, { cwd: rootDir, silent: true })
         await rename(join(publicDir, 'favicon-head.json'), headFile)
         const source = isFigma ? 'Figma' : relative(rootDir, input)
         logger.success(`Generated favicons from ${source} in ${Math.round(performance.now() - start)}ms`)
-        await removeStaleOutputs(cacheRoot, hash)
+        await removeStaleOutputs(outputsRoot, hash)
       }
 
       if (head) {

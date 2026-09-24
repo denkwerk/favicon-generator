@@ -19,15 +19,17 @@ export interface Options extends Omit<FaviconConfig, '$schema' | 'output' | 'ove
   base?: string
   /**
    * Directory that the config file lookup and relative paths start from, and
-   * that holds the cache in `node_modules/.cache`. @default Vite's `root`, else `process.cwd()`
+   * that holds the cache in `node_modules/.cache/favicon-generator`.
+   * @default Vite's `root`, else `process.cwd()`
    */
   root?: string
   /** Vite: add the `<link>` and `<meta>` tags to every HTML page. @default true */
   inject?: boolean
   /**
    * Reuse the generated files while the options and the input file are
-   * unchanged. Figma exports are cached too; set `false` to export on every
-   * build. @default true
+   * unchanged. A Figma export is reused while the Figma file's version is
+   * unchanged, which one small API request checks on every build; set `false`
+   * to export on every build. @default true
    */
   cache?: boolean
   /**
@@ -39,7 +41,7 @@ export interface Options extends Omit<FaviconConfig, '$schema' | 'output' | 'ove
 }
 
 /** Options for the generator: everything except the plugin's own switches. */
-type GeneratorOptions = Omit<Options, 'root' | 'base' | 'inject' | 'cache' | 'configFile'>
+type GeneratorOptions = Omit<Options, 'root' | 'base' | 'inject' | 'configFile'>
 
 export interface HeadTag {
   [attribute: string]: string
@@ -61,6 +63,8 @@ export interface Favicons {
 export const PLUGIN_NAME = '@denkwerk/unplugin-favicon-generator'
 const HEAD_FILE = 'favicon-head.json'
 const HTML_FILE = 'favicon.html'
+/** Shared with the generator's own cache. */
+const CACHE_DIR = 'node_modules/.cache/favicon-generator'
 
 const require = createRequire(import.meta.url)
 const generatorVersion: string = require('@denkwerk/favicon-generator/package.json').version
@@ -85,12 +89,13 @@ export async function prepareFavicons(
   options: Options,
   { root, urlPrefix, warn }: { root: string, urlPrefix: string, warn: (message: string) => void },
 ): Promise<Favicons | null> {
-  const { root: _root, base: _base, inject: _inject, cache = true, configFile, ...inline } = options
+  const { root: _root, base: _base, inject: _inject, configFile, ...inline } = options
   const loaded = configFile === false
     ? { path: null, config: {} }
     : await loadConfig({ cwd: root, configFile })
   const { output: _output, overwrite: _overwrite, snippets: _snippets, $schema: _schema, ...fromFile } = loaded.config
   const generatorOptions = mergeConfig<GeneratorOptions>(fromFile, inline)
+  const cache = generatorOptions.cache ?? true
   const watchFiles = loaded.path ? [loaded.path] : []
 
   if (!generatorOptions.input) {
@@ -106,29 +111,35 @@ export async function prepareFavicons(
     watchFiles.push(input)
   }
 
+  const cacheRoot = resolve(root, generatorOptions.cacheDir ?? CACHE_DIR)
   const config: FaviconConfig = {
     ...generatorOptions,
     input,
+    cache,
+    cacheDir: cacheRoot,
     figmaTokenFile: generatorOptions.figmaTokenFile && resolve(root, generatorOptions.figmaTokenFile),
     pathPrefix: urlPrefix,
     overwrite: true,
     snippets: ['json', 'html'],
   }
 
-  // The cache key covers everything that affects the output, but not the token.
+  // The key covers everything that affects the output, but not the token or
+  // where the cache is.
+  // A Figma export can change without the options changing, so the generator
+  // checks it on every build (and reuses what it can from its own cache).
   const hash = createHash('sha256')
-    .update(JSON.stringify({ generatorVersion, config: { ...config, figmaToken: undefined } }))
+    .update(JSON.stringify({ generatorVersion, config: { ...config, figmaToken: undefined, cache: undefined, cacheDir: undefined } }))
     .update(isFigma ? '' : readFileSync(input))
     .digest('hex')
     .slice(0, 16)
-  const cacheRoot = join(root, 'node_modules/.cache/unplugin-favicon-generator')
+  const outputsRoot = join(cacheRoot, 'unplugin')
   // <hash>/files holds the icons; the snippets are moved next to it, so that
   // `files` is exactly what gets served.
-  const dir = join(cacheRoot, hash, 'files')
-  const headFile = join(cacheRoot, hash, HEAD_FILE)
-  const htmlFile = join(cacheRoot, hash, HTML_FILE)
+  const dir = join(outputsRoot, hash, 'files')
+  const headFile = join(outputsRoot, hash, HEAD_FILE)
+  const htmlFile = join(outputsRoot, hash, HTML_FILE)
 
-  if (!cache || !existsSync(headFile)) {
+  if (!cache || isFigma || !existsSync(headFile)) {
     // Builds and the dev server's watcher can ask for the same output at once.
     let pending = inflight.get(headFile)
     if (!pending) {
@@ -137,7 +148,7 @@ export async function prepareFavicons(
         await rename(join(dir, HTML_FILE), htmlFile)
         // Last, so an interrupted run is not taken for a complete one.
         await rename(join(dir, HEAD_FILE), headFile)
-        await removeStaleOutputs(cacheRoot, hash)
+        await removeStaleOutputs(outputsRoot, hash)
       })().finally(() => inflight.delete(headFile))
       inflight.set(headFile, pending)
     }

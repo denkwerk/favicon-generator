@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { build, createServer } from 'vite'
 import { describe, expect, it } from 'vitest'
@@ -68,6 +68,42 @@ describe('vite build', () => {
     })
 
     expect(listFiles(join(root, 'dist-ssr'))).toEqual(['main.js'])
+  })
+})
+
+describe('cache', () => {
+  const cacheDir = (root: string) => join(root, 'node_modules/.cache/favicon-generator')
+  const buildWith = (root: string, options: Parameters<typeof favicons>[0]) =>
+    build({ root, logLevel: 'silent', plugins: [favicons({ input: './favicon.svg', ...options })] })
+
+  it('keeps the output in node_modules/.cache/favicon-generator and reuses it', async () => {
+    const root = copyFixture('app')
+    await buildWith(root, {})
+    const [entry] = readdirSync(join(cacheDir(root), 'unplugin'))
+    const icon = join(cacheDir(root), 'unplugin', entry!, 'files/favicon.ico')
+    const generated = statSync(icon).mtimeMs
+    // The generator's own cache.
+    expect(readdirSync(join(cacheDir(root), 'outputs'))).toHaveLength(1)
+
+    await buildWith(root, {})
+    expect(statSync(icon).mtimeMs).toBe(generated)
+
+    // A change to the image is a new entry; the old one is removed.
+    writeFileSync(join(root, 'favicon.svg'), readFileSync(join(root, 'favicon.svg'), 'utf8').replace('<svg', '<svg data-changed="1"'))
+    await buildWith(root, {})
+    expect(readdirSync(join(cacheDir(root), 'unplugin'))).not.toContain(entry)
+  })
+
+  it('generates again with cache: false, and cacheDir moves the cache', async () => {
+    const root = copyFixture('app')
+    await buildWith(root, { cacheDir: '.favicons' })
+    const [entry] = readdirSync(join(root, '.favicons/unplugin'))
+    const icon = join(root, '.favicons/unplugin', entry!, 'files/favicon.ico')
+    const generated = statSync(icon).mtimeMs
+
+    await buildWith(root, { cacheDir: '.favicons', cache: false })
+    expect(statSync(icon).mtimeMs).toBeGreaterThan(generated)
+    expect(listFiles(join(root, 'dist')).filter((file) => !file.startsWith('assets/'))).toEqual([...DEFAULT_FILES, 'index.html'])
   })
 })
 
