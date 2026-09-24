@@ -71,6 +71,30 @@
     },
     "./package.json": "./package.json"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "vite": [
+        "./dist/vite.d.ts"
+      ],
+      "rollup": [
+        "./dist/rollup.d.ts"
+      ],
+      "rolldown": [
+        "./dist/rolldown.d.ts"
+      ],
+      "webpack": [
+        "./dist/webpack.d.ts"
+      ],
+      "rspack": [
+        "./dist/rspack.d.ts"
+      ],
+      "client": [
+        "./client.d.ts"
+      ]
+    }
+  },
   "files": [
     "client.d.ts",
     "dist"

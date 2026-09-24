@@ -51,6 +51,15 @@ function check(path: string, name: string, version: string): void {
     }
   }
 
+  // The fallbacks for `moduleResolution: node`, which ignores `exports`.
+  const typesVersions = Object.values<Record<string, string[]>>(manifest.typesVersions ?? {})
+    .flatMap((mapping) => Object.values(mapping).flat())
+  for (const file of [manifest.main, manifest.types, ...typesVersions].filter(Boolean)) {
+    if (!entries.has(file.replace(/^\.\//, ''))) {
+      throw new Error(`${path}: ${file} is referenced in package.json but not packed`)
+    }
+  }
+
   if (name === '@denkwerk/favicon-generator') {
     for (const { os, cpu } of Object.values(TARGETS)) {
       const binary = `bin/${os}-${cpu}/favicon-generator${os === 'win32' ? '.exe' : ''}`
