@@ -22,8 +22,10 @@ A Nuxt module that generates favicons and an Apple touch icon from one SVG, a ra
 serves the files, and adds the matching `<link>` and `<meta>` tags to every page. Additionally, it can add a web app
 manifest, a theme color and Windows tiles. It is built on [`@denkwerk/favicon-generator`](../favicon-generator).
 
-- Nothing is written to `public/`: the files are generated into `node_modules/.cache` at build time and served by Nitro.
-- Output is cached until the options or the source image change, so Figma is only called when something changed.
+- Nothing is written to `public/`: the files are generated into `node_modules/.cache/favicon-generator` at build time
+  and served by Nitro.
+- Output is cached until the options or the source image change. A Figma export is reused while the Figma file is
+  unchanged, which one small API request checks.
 - In `nuxt dev`, editing the source image restarts Nuxt with regenerated icons.
 
 ## Setup
@@ -101,7 +103,8 @@ the Figma token. Relative paths are resolved against the Nuxt `rootDir`.
 | `input` | none | Source image or Figma link. Nothing is generated without it. |
 | `pathPrefix` | `/` | Path under `app.baseURL` to serve the files from. `/` keeps `/favicon.ico` where browsers look for it. |
 | `head` | `true` | Add the `<link>`/`<meta>` tags to every page. |
-| `cache` | `true` | Reuse generated files while options and source are unchanged. Set to `false` to re-export from Figma on every build. |
+| `cache` | `true` | Reuse generated files while options and source are unchanged, and a Figma export while the Figma file is unchanged (one small API request per build checks it). `false` generates and exports on every build. |
+| `cacheDir` | `node_modules/.cache/favicon-generator` | Where the cache and the generated files are kept. |
 | `configFile` | looked up | Path to a specific config file, or `false` to ignore config files. |
 | `enabled` | `true` | Turn the module off, e.g. `enabled: process.env.CI !== 'true'`. |
 

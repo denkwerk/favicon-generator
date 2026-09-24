@@ -32,6 +32,8 @@
 - 🎯 **Ready in one command**: `favicon.ico`, an SVG favicon, a PNG and an Apple touch icon, plus the tags to link them
 - 🧩 **Add what your site needs**: a web app manifest, a theme color, Windows tiles or legacy sizes, one option each
 - 🎨 **Figma as a source**: pass a link to a component and it is exported through the Figma REST API
+- ♻️ **Cached**: unchanged input and options reuse the generated files, and a Figma export is reused while the
+  Figma file is unchanged
 - ⚡️ **Native and self-contained**: a Rust binary, prebuilt for macOS, Linux and Windows; no sharp, no ImageMagick,
   no install scripts
 - 🛠️ **One set of options everywhere**: CLI flags, `favicon.config.{ts,js,json}`, the Node.js API, the Nuxt module and
@@ -278,6 +280,23 @@ personal access token with the `file_content:read` scope:
 | --- | --- | --- |
 | `figmaToken` | `--figma-token`, `FIGMA_TOKEN` | the token; prefer the env var over committing it |
 | `figmaTokenFile` | `--figma-token-file`, `FIGMA_TOKEN_FILE` | a (gitignored) file containing the token |
+
+### Cache
+
+The generated files are cached in `node_modules/.cache/favicon-generator` of the project (the nearest directory with a
+`package.json`, if it has a `node_modules`). While the input and the options are unchanged, a run copies the files
+from there instead of rendering them again. A Figma export is reused while the Figma file's version is unchanged,
+which one small API request checks; if that request fails (offline, rate limited, no token), the cached export is used
+with a warning. The Nuxt module and the bundler plugin keep their output in the same directory.
+
+| Option | Flag / env var | |
+| --- | --- | --- |
+| `cache` | `--no-cache` | `true`; `false` generates everything and exports from Figma on every run |
+| `cacheDir` | `--cache-dir`, `FAVICON_GENERATOR_CACHE_DIR` | another directory for the cache, e.g. outside `node_modules` |
+
+A cache hit takes 3–6 ms instead of 15–50 ms for an SVG and about 650 ms for a 2048 px PNG with all options, and a
+Figma input costs one request of about 0.5 s instead of an export and a download of about 1.5 s
+(`node scripts/bench-cache.ts`, Apple M-series).
 
 <details>
 <summary><b>Upgrading from 0.1</b></summary>

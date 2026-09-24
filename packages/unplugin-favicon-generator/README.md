@@ -23,8 +23,10 @@ Apple touch icon from one SVG, a raster image or a Figma component and writes th
 Additionally, it can add a web app manifest, a theme color and Windows tiles. It is built on
 [`@denkwerk/favicon-generator`](../favicon-generator).
 
-- Nothing is written to `public/`: the files are generated into `node_modules/.cache` and emitted as build assets.
-- Output is cached until the options or the source image change, so Figma is only called when something changed.
+- Nothing is written to `public/`: the files are generated into `node_modules/.cache/favicon-generator` and emitted as
+  build assets.
+- Output is cached until the options or the source image change. A Figma export is reused while the Figma file is
+  unchanged, which one small API request checks.
 - **Vite**: the tags are injected into every HTML page and follow `base`; the dev server serves the files and
   reloads the page when the image or the config file changes. Server (SSR) builds get no copies of the files.
 
@@ -158,9 +160,10 @@ Relative paths are resolved against `root`.
 | `input` | none | Source image or Figma link. Nothing is generated without it. |
 | `pathPrefix` | `/` | Directory in the build output, and URL path below `base`, for the files. `/` keeps `/favicon.ico` where browsers look for it. |
 | `base` | `/` | URL the build output is served from, e.g. a CDN. Vite uses its own `base`. |
-| `root` | Vite's `root`, else `process.cwd()` | Where the config file lookup and relative paths start, and where `node_modules/.cache` is. |
+| `root` | Vite's `root`, else `process.cwd()` | Where the config file lookup and relative paths start, and where `node_modules/.cache/favicon-generator` is. |
 | `inject` | `true` | Vite: add the `<link>`/`<meta>` tags to every HTML page. |
-| `cache` | `true` | Reuse generated files while options and source are unchanged. Set to `false` to re-export from Figma on every build. |
+| `cache` | `true` | Reuse generated files while options and source are unchanged, and a Figma export while the Figma file is unchanged (one small API request per build checks it). `false` generates and exports on every build. |
+| `cacheDir` | `node_modules/.cache/favicon-generator` | Where the cache and the generated files are kept. |
 | `configFile` | looked up | Path to a specific config file, or `false` to ignore config files. |
 
 ## Examples

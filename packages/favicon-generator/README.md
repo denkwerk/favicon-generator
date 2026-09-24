@@ -106,6 +106,8 @@ included by default.
 | **`legacy`** | `--[no-]legacy` | adds 19 PNG sizes, sized Apple touch icons, a 7-frame `favicon.ico` |
 | `figmaToken` | `--figma-token`, `FIGMA_TOKEN` | see [Figma](#figma) |
 | `figmaTokenFile` | `--figma-token-file`, `FIGMA_TOKEN_FILE` | see [Figma](#figma) |
+| `cache` | `--no-cache` | `true`; see [Cache](#cache) |
+| `cacheDir` | `--cache-dir`, `FAVICON_GENERATOR_CACHE_DIR` | `node_modules/.cache/favicon-generator` in the project root, if it has a `node_modules` |
 
 The manifest contains exactly the fields you set; give it a `name` or `shortName` so browsers can offer installing the
 app.
@@ -134,6 +136,14 @@ export default defineConfig({
   output: './public/favicons',
 })
 ```
+
+## Cache
+
+While the input and the options are unchanged, the generated files are copied from the cache instead of being
+rendered again. A Figma export is reused while the Figma file's version is unchanged, which costs one small API
+request instead of an export and a download; when that request fails (offline, rate limited, no token), the cached
+export is used with a warning. `cache: false` / `--no-cache` turns the cache off, `cacheDir` / `--cache-dir` moves it.
+Without a `node_modules` in the project root and without `cacheDir`, nothing is cached.
 
 ## Node.js API
 

@@ -59,7 +59,7 @@ the next release (see [Releasing](#releasing)).
 | Where | What | Run |
 | --- | --- | --- |
 | `crates/favicon-generator/src` | unit tests: config parsing and merging, Figma links, the JSON Schema | `cargo test` |
-| `crates/favicon-generator/tests` | the binary end to end: files and tags per option ([snapshots](crates/favicon-generator/tests/snapshots)), images, config files, errors, Figma against a mock server | `cargo test` |
+| `crates/favicon-generator/tests` | the binary end to end: files and tags per option ([snapshots](crates/favicon-generator/tests/snapshots)), images, config files, errors, the cache, Figma against a mock server | `cargo test` |
 | `packages/favicon-generator/test` | `generate()` and `loadConfig()`; type tests for `defineConfig`; TS types vs. JSON Schema | `pnpm test`, `pnpm typecheck` |
 | `packages/nuxt-favicon-generator/test` | option merging; builds and serves [fixture apps](packages/nuxt-favicon-generator/test/fixtures) and checks files and tags | `pnpm test` |
 | `packages/unplugin-favicon-generator/test` | real Vite (build, SSR build, dev server), Rollup, Rolldown, webpack and Rspack builds of [fixtures](packages/unplugin-favicon-generator/test/fixtures): emitted files, tags, `virtual:favicons`, config files, regeneration in dev | `pnpm test` |
@@ -67,6 +67,12 @@ the next release (see [Releasing](#releasing)).
 `pnpm turbo run test` runs all of them, as CI does on Linux, macOS and Windows. On Windows, run the crate's tests
 first (`pnpm turbo run test --filter=favicon-generator`), as CI does: `cargo test` relinks
 `target/debug/favicon-generator.exe`, which fails while another task is running it.
+
+What the cache saves, measured with the release binary (`FIGMA_TOKEN` adds a real Figma export):
+
+```bash
+cargo build --release && node scripts/bench-cache.ts
+```
 
 After an intended output change, accept the snapshots with `INSTA_UPDATE=always cargo test`, or review them one by
 one with [`cargo insta review`](https://insta.rs/docs/cli/) (`cargo install cargo-insta`).
