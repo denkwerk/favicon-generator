@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.4](https://github.com/denkwerk/favicon-generator/compare/v0.2.3...v0.2.4) (2026-09-24)
+
+### Bug Fixes
+
+* **npm:** resolve the types with moduleResolution node ([4c6c3e5](https://github.com/denkwerk/favicon-generator/commit/4c6c3e50d5c1f13983b00b96b52750675cbc3e95))
+
+### Documentation
+
+* describe the pinned tool versions and have Dependabot propose Rust and Actions updates ([949904f](https://github.com/denkwerk/favicon-generator/commit/949904fea82825aab585e65f15b78bd5dbe7ea9c))
+
 ## [0.2.3](https://github.com/denkwerk/favicon-generator/compare/v0.2.2...v0.2.3) (2026-09-24)
 
 ### Bug Fixes

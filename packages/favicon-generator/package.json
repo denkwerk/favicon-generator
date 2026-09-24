@@ -1,6 +1,6 @@
 {
   "name": "@denkwerk/favicon-generator",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Generate favicons, touch icons, a web app manifest and browserconfig.xml from an SVG or a Figma node. CLI and Node.js API; also available as a Nuxt module and a Vite, Rollup, Rolldown, webpack and Rspack plugin",
   "license": "MIT",
   "author": "denkwerk GmbH (https://denkwerk.com)",
