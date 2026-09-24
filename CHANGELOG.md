@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.5](https://github.com/denkwerk/favicon-generator/compare/v0.2.4...v0.2.5) (2026-09-24)
+
+### Features
+
+* **cli:** reuse generated files and Figma exports from a cache ([c45c6ad](https://github.com/denkwerk/favicon-generator/commit/c45c6adf9bc7bc30d014aaf06259b2359aa780ea))
+* **core:** add the cache and cacheDir options to FaviconConfig ([ce47dd6](https://github.com/denkwerk/favicon-generator/commit/ce47dd6315292f4e07a52e3e0669b43456c036ca))
+* **unplugin,nuxt:** cache in node_modules/.cache/favicon-generator and check Figma for changes ([9068b8c](https://github.com/denkwerk/favicon-generator/commit/9068b8cd01ec023aedc0209ef6a418abb6011125))
+
+### Performance Improvements
+
+* **cli:** request the Figma file version along with the first export ([62587e0](https://github.com/denkwerk/favicon-generator/commit/62587e0fb4a78b82e0a3bcc74614d65a47c0264c))
+
+### Documentation
+
+* **readme:** describe the cache and what it saves ([e26faad](https://github.com/denkwerk/favicon-generator/commit/e26faadeb78903a0476a228874c974c8da8d3e87))
+
 ## [0.2.4](https://github.com/denkwerk/favicon-generator/compare/v0.2.3...v0.2.4) (2026-09-24)
 
 ### Bug Fixes
