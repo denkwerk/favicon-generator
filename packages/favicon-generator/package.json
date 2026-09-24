@@ -3,11 +3,34 @@
   "version": "0.2.2",
   "description": "Generate favicons, touch icons, a web app manifest and browserconfig.xml from an SVG or a Figma node",
   "license": "MIT",
+  "author": "denkwerk GmbH (https://denkwerk.com)",
+  "homepage": "https://github.com/denkwerk/favicon-generator/tree/main/packages/favicon-generator#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/denkwerk/favicon-generator.git",
     "directory": "packages/favicon-generator"
   },
+  "bugs": {
+    "url": "https://github.com/denkwerk/favicon-generator/issues"
+  },
+  "keywords": [
+    "favicon",
+    "favicon-generator",
+    "favicons",
+    "favicon.ico",
+    "apple-touch-icon",
+    "web-app-manifest",
+    "manifest",
+    "pwa",
+    "svg",
+    "figma",
+    "icons",
+    "cli",
+    "rust",
+    "generator",
+    "browserconfig",
+    "head-tags"
+  ],
   "type": "module",
   "exports": {
     ".": {

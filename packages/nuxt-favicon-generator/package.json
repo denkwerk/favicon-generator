@@ -3,11 +3,34 @@
   "version": "0.2.2",
   "description": "Nuxt module that generates favicons, touch icons and a web app manifest from an SVG or a Figma node, and adds the head tags",
   "license": "MIT",
+  "author": "denkwerk GmbH (https://denkwerk.com)",
+  "homepage": "https://github.com/denkwerk/favicon-generator/tree/main/packages/nuxt-favicon-generator#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/denkwerk/favicon-generator.git",
     "directory": "packages/nuxt-favicon-generator"
   },
+  "bugs": {
+    "url": "https://github.com/denkwerk/favicon-generator/issues"
+  },
+  "keywords": [
+    "favicon",
+    "favicon-generator",
+    "favicons",
+    "favicon.ico",
+    "apple-touch-icon",
+    "web-app-manifest",
+    "manifest",
+    "pwa",
+    "svg",
+    "figma",
+    "icons",
+    "nuxt",
+    "nuxt-module",
+    "nuxt3",
+    "nuxt4",
+    "nitro"
+  ],
   "type": "module",
   "exports": {
     ".": {
