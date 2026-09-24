@@ -17,6 +17,12 @@ export interface ModuleOptions extends Omit<FaviconConfig, '$schema' | 'output' 
    * `/favicon.ico`, which browsers request even without a `<link>`. @default '/'
    */
   pathPrefix?: string
+  /**
+   * More paths under `app.baseURL` that serve the same files, e.g. `['/']`
+   * next to `pathPrefix: '/public/'`, to keep `/favicon.ico` at the site root
+   * as well. The tags and the manifest use `pathPrefix`. @default []
+   */
+  mirrorPrefixes?: string[]
   /** Add the `<link>` and `<meta>` tags to every page. @default true */
   head?: boolean
   /**
@@ -35,7 +41,7 @@ export interface ModuleOptions extends Omit<FaviconConfig, '$schema' | 'output' 
 }
 
 /** Options for the generator: everything except the module's own switches. */
-export type GeneratorOptions = Omit<ModuleOptions, 'enabled' | 'head' | 'configFile'>
+export type GeneratorOptions = Omit<ModuleOptions, 'enabled' | 'head' | 'configFile' | 'mirrorPrefixes'>
 
 const NAME = '@denkwerk/nuxt-favicon-generator'
 const require = createRequire(import.meta.url)
@@ -58,7 +64,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   },
   async setup(options, nuxt) {
     const logger = useLogger('favicon-generator')
-    const { enabled, head, configFile, ...inlineOptions } = options
+    const { enabled, head, configFile, mirrorPrefixes, ...inlineOptions } = options
     if (!enabled) {
       return
     }
@@ -95,6 +101,8 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     // Served by Nitro under app.baseURL; the generated URLs need both.
     const routePrefix = withTrailingSlash(withLeadingSlash(generatorOptions.pathPrefix ?? '/'))
+    // Every path the files are served from: the one the URLs use first.
+    const routePrefixes = [...new Set([routePrefix, ...(mirrorPrefixes ?? []).map((prefix) => withTrailingSlash(withLeadingSlash(prefix)))])]
     const cache = generatorOptions.cache ?? true
     const cacheRoot = resolve(rootDir, generatorOptions.cacheDir ?? 'node_modules/.cache/favicon-generator')
     const config: FaviconConfig = {
@@ -123,7 +131,9 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     const headFile = join(outputsRoot, hash, 'head.json')
     config.output = publicDir
 
-    warnAboutShadowedFiles(resolve(rootDir, nuxt.options.dir.public), routePrefix, logger)
+    for (const prefix of routePrefixes) {
+      warnAboutShadowedFiles(resolve(rootDir, nuxt.options.dir.public), prefix, logger)
+    }
 
     if (!isFigma) {
       nuxt.options.watch.push(input)
@@ -131,16 +141,18 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     nuxt.hook('nitro:config', (nitroConfig) => {
       nitroConfig.publicAssets ||= []
-      nitroConfig.publicAssets.push({ dir: publicDir, baseURL: routePrefix, maxAge: 60 * 60 * 24 })
+      for (const prefix of routePrefixes) {
+        nitroConfig.publicAssets.push({ dir: publicDir, baseURL: prefix, maxAge: 60 * 60 * 24 })
+      }
       // The prerender crawler follows <link rel="manifest">; under a non-root
       // app.baseURL it would render the manifest route as a page and replace
       // the file with a directory.
       nitroConfig.prerender ||= {}
       nitroConfig.prerender.ignore ||= []
-      nitroConfig.prerender.ignore.push(
-        joinURL(routePrefix, 'manifest.json'),
-        joinURL(nuxt.options.app.baseURL, routePrefix, 'manifest.json'),
-      )
+      nitroConfig.prerender.ignore.push(...routePrefixes.flatMap((prefix) => [
+        joinURL(prefix, 'manifest.json'),
+        joinURL(nuxt.options.app.baseURL, prefix, 'manifest.json'),
+      ]))
     })
 
     // Generating can take a moment (especially from Figma), so it runs after

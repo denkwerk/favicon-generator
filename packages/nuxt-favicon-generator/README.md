@@ -102,6 +102,7 @@ the Figma token. Relative paths are resolved against the Nuxt `rootDir`.
 | --- | --- | --- |
 | `input` | none | Source image or Figma link. Nothing is generated without it. |
 | `pathPrefix` | `/` | Path under `app.baseURL` to serve the files from. `/` keeps `/favicon.ico` where browsers look for it. |
+| `mirrorPrefixes` | `[]` | More paths that serve the same files, e.g. `['/']` with `pathPrefix: '/public/'` to link them under `/public/` and keep them at the site root. The tags use `pathPrefix`. |
 | `head` | `true` | Add the `<link>`/`<meta>` tags to every page. |
 | `cache` | `true` | Reuse generated files while options and source are unchanged, and a Figma export while the Figma file is unchanged (one small API request per build checks it). `false` generates and exports on every build. |
 | `cacheDir` | `node_modules/.cache/favicon-generator` | Where the cache and the generated files are kept. |

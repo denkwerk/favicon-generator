@@ -13,6 +13,12 @@ export interface Options extends Omit<FaviconConfig, '$schema' | 'output' | 'ove
    */
   pathPrefix?: string
   /**
+   * More directories (URL paths below `base`) that get the same files, e.g.
+   * `['/']` next to `pathPrefix: '/public/'`, to keep `/favicon.ico` at the
+   * site root as well. The tags and the manifest use `pathPrefix`. @default []
+   */
+  mirrorPrefixes?: string[]
+  /**
    * URL the build output is served from. Vite uses its own `base` instead.
    * @default '/'
    */
@@ -41,7 +47,7 @@ export interface Options extends Omit<FaviconConfig, '$schema' | 'output' | 'ove
 }
 
 /** Options for the generator: everything except the plugin's own switches. */
-type GeneratorOptions = Omit<Options, 'root' | 'base' | 'inject' | 'configFile'>
+type GeneratorOptions = Omit<Options, 'root' | 'base' | 'inject' | 'configFile' | 'mirrorPrefixes'>
 
 export interface HeadTag {
   [attribute: string]: string
@@ -89,7 +95,7 @@ export async function prepareFavicons(
   options: Options,
   { root, urlPrefix, warn }: { root: string, urlPrefix: string, warn: (message: string) => void },
 ): Promise<Favicons | null> {
-  const { root: _root, base: _base, inject: _inject, configFile, ...inline } = options
+  const { root: _root, base: _base, inject: _inject, configFile, mirrorPrefixes: _mirrorPrefixes, ...inline } = options
   const loaded = configFile === false
     ? { path: null, config: {} }
     : await loadConfig({ cwd: root, configFile })

@@ -250,8 +250,10 @@ installing the app.
 | `manifest.scope` | `--scope` | `scope` |
 | `manifest.display` | `--display` | `display`: `fullscreen`, `standalone`, `minimal-ui` or `browser` |
 | `manifest.backgroundColor` | `--background-color` | `background_color`, also behind maskable icons |
-| `manifest.maskable` | `--maskable` | adds `favicon-maskable-{192,512}` icons: the image at 60 % on `backgroundColor`, so Android's round masks don't cut into it |
+| `manifest.maskable` | `--maskable` | adds `favicon-maskable-{N}x{N}` icons (one per icon size): the image at 60 % on `backgroundColor`, so Android's round masks don't cut into it |
 | `manifest.crossorigin` | `--manifest-crossorigin` | `crossorigin` on the `<link>`, e.g. `use-credentials` |
+| `manifest.iconSizes` | `--manifest-icon-sizes` | the icon sizes listed in `icons`; default `[192, 512]`, other sizes are rendered as needed |
+| `manifest.iconPurpose` | `--manifest-icon-purpose` | `purpose` of those icons, e.g. `any maskable`; prefer `maskable` for separate maskable icons |
 
 Any manifest flag turns the manifest on, e.g. `favicon-generator -i logo.svg -o out --name "My App"`.
 
@@ -312,7 +314,7 @@ and the old names are rejected with a hint:
 | `startUrl`, `scope`, `display`, `manifestCrossorigin` | `manifest.startUrl`, `manifest.scope`, `manifest.display`, `manifest.crossorigin` |
 | `backgroundColor` | `manifest.backgroundColor`, or `appleTouchIcon.background` for the touch icon |
 | `tileColor` | `windows.tileColor` (which also adds `browserconfig.xml`) |
-| `iconPurpose: 'any maskable'` | `manifest.maskable: true` (separate maskable icons) |
+| `iconPurpose: 'any maskable'` | `manifest.iconPurpose: 'any maskable'`, or `manifest.maskable: true` for separate maskable icons |
 | `--app-name` | `--name` |
 | `snippets` default `['html', 'nuxt']` | `['html']` |
 

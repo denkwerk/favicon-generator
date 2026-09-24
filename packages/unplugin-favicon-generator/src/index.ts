@@ -28,8 +28,10 @@ const SHADOWED_FILES = ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'm
 
 export const unpluginFactory: UnpluginFactory<Options | undefined> = (options = {}) => {
   const prefix = normalizePrefix(options.pathPrefix)
+  // Every path the files are written to and served from: the one the URLs use first.
+  const prefixes = [...new Set([prefix, ...(options.mirrorPrefixes ?? []).map((mirror) => normalizePrefix(mirror))])]
   // Relative to the output directory: `''` for the root, `favicons/` for `/favicons/`.
-  const outputDir = prefix.slice(1)
+  const outputDirs = prefixes.map((path) => path.slice(1))
 
   let root = options.root ?? process.cwd()
   let base = options.base ?? '/'
@@ -60,17 +62,20 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options = 
         return
       }
       for (const file of favicons.files) {
-        this.emitFile({ type: 'asset', fileName: `${outputDir}${file}`, source: await readFile(join(favicons.dir, file)) })
+        const source = await readFile(join(favicons.dir, file))
+        for (const dir of outputDirs) {
+          this.emitFile({ type: 'asset', fileName: `${dir}${file}`, source })
+        }
       }
     },
 
     // unplugin runs `buildEnd` after webpack sealed the compilation, where adding
     // assets is deprecated; `processAssets` is the stage meant for it.
     webpack(compiler) {
-      emitInProcessAssets(compiler, () => current, outputDir)
+      emitInProcessAssets(compiler, () => current, outputDirs)
     },
     rspack(compiler) {
-      emitInProcessAssets(compiler, () => current, outputDir)
+      emitInProcessAssets(compiler, () => current, outputDirs)
     },
 
     resolveId(id) {
@@ -95,10 +100,11 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options = 
         root = options.root ?? config.root
         base = config.base
         serve = config.command === 'serve'
-        const clashes = SHADOWED_FILES.filter((file) => config.publicDir && existsSync(join(config.publicDir, outputDir, file)))
+        const clashes = outputDirs.flatMap((dir) => SHADOWED_FILES.map((file) => join(dir, file)))
+          .filter((file) => config.publicDir && existsSync(join(config.publicDir, file)))
         if (clashes.length > 0) {
           config.logger.warn(
-            `[${PLUGIN_NAME}] ${clashes.map((file) => relative(root, join(config.publicDir, outputDir, file))).join(', ')} `
+            `[${PLUGIN_NAME}] ${clashes.map((file) => relative(root, join(config.publicDir, file))).join(', ')} `
             + 'conflict with the generated favicons; remove them to use the generated ones.',
           )
         }
@@ -117,7 +123,7 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options = 
 
       configureServer(server) {
         const warn = (message: string) => server.config.logger.warn(`[${PLUGIN_NAME}] ${message}`)
-        const urlPrefix = joinUrl(server.config.base, prefix)
+        const urlPrefixes = prefixes.map((path) => joinUrl(server.config.base, path))
         // Generating takes a moment; the server may be closed by then, and a
         // closed watcher must not be given new files to watch.
         const watch = (favicons: Favicons | null) => {
@@ -129,7 +135,10 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options = 
         // Before Vite's own middlewares, which would answer with index.html.
         server.middlewares.use(async (req, res, next) => {
           const path = req.url?.split('?')[0] ?? ''
-          if (!path.startsWith(urlPrefix)) {
+          // The longest match, so that `/public/x` is not taken for a root mirror's `public/x`.
+          const urlPrefix = urlPrefixes.filter((candidate) => path.startsWith(candidate))
+            .sort((a, b) => b.length - a.length)[0]
+          if (!urlPrefix) {
             return next()
           }
           try {
@@ -196,7 +205,7 @@ interface WebpackLikeCompilation {
   emitAsset: (file: string, source: never) => void
 }
 
-function emitInProcessAssets(compiler: unknown, favicons: () => Promise<Favicons | null> | undefined, outputDir: string) {
+function emitInProcessAssets(compiler: unknown, favicons: () => Promise<Favicons | null> | undefined, outputDirs: string[]) {
   const { webpack, hooks } = compiler as WebpackLikeCompiler
   hooks.thisCompilation.tap(PLUGIN_NAME, (compilation) => {
     compilation.hooks.processAssets.tapPromise(
@@ -205,7 +214,9 @@ function emitInProcessAssets(compiler: unknown, favicons: () => Promise<Favicons
         const generated = await favicons()
         for (const file of generated?.files ?? []) {
           const source = new webpack.sources.RawSource(await readFile(join(generated!.dir, file)))
-          compilation.emitAsset(`${outputDir}${file}`, source as never)
+          for (const dir of outputDirs) {
+            compilation.emitAsset(`${dir}${file}`, source as never)
+          }
         }
       },
     )

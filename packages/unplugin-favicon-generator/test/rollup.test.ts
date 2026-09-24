@@ -7,12 +7,12 @@ import rollupFavicons from '../src/rollup.js'
 import { DEFAULT_FILES, copyFixture } from './helpers.js'
 
 const bundlers = {
-  rollup: async (root: string, pathPrefix?: string) => {
-    const bundle = await rollup({ input: join(root, 'main.js'), plugins: [rollupFavicons({ root, input: './favicon.svg', pathPrefix })] })
+  rollup: async (root: string, pathPrefix?: string, mirrorPrefixes?: string[]) => {
+    const bundle = await rollup({ input: join(root, 'main.js'), plugins: [rollupFavicons({ root, input: './favicon.svg', pathPrefix, mirrorPrefixes })] })
     return (await bundle.generate({ format: 'es' })).output
   },
-  rolldown: async (root: string, pathPrefix?: string) => {
-    const bundle = await rolldown({ input: join(root, 'main.js'), plugins: [rolldownFavicons({ root, input: './favicon.svg', pathPrefix })] })
+  rolldown: async (root: string, pathPrefix?: string, mirrorPrefixes?: string[]) => {
+    const bundle = await rolldown({ input: join(root, 'main.js'), plugins: [rolldownFavicons({ root, input: './favicon.svg', pathPrefix, mirrorPrefixes })] })
     return (await bundle.generate({ format: 'es' })).output
   },
 }
@@ -34,6 +34,14 @@ for (const [name, bundle] of Object.entries(bundlers)) {
       const assets = output.filter((file) => file.type === 'asset').map((file) => file.fileName).sort()
       expect(assets).toEqual(DEFAULT_FILES.map((file) => `static/icons/${file}`))
       expect(output.find((file) => file.type === 'chunk')!.code).toContain('/static/icons/favicon.svg')
+    })
+
+    it('emits the files to every mirror', async () => {
+      const output = await bundle(copyFixture('app'), '/public/', ['/'])
+
+      const assets = output.filter((file) => file.type === 'asset').map((file) => file.fileName).sort()
+      expect(assets).toEqual([...DEFAULT_FILES, ...DEFAULT_FILES.map((file) => `public/${file}`)].sort())
+      expect(output.find((file) => file.type === 'chunk')!.code).toContain('/public/favicon.svg')
     })
   })
 }

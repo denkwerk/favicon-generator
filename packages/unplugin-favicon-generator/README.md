@@ -159,6 +159,7 @@ Relative paths are resolved against `root`.
 | --- | --- | --- |
 | `input` | none | Source image or Figma link. Nothing is generated without it. |
 | `pathPrefix` | `/` | Directory in the build output, and URL path below `base`, for the files. `/` keeps `/favicon.ico` where browsers look for it. |
+| `mirrorPrefixes` | `[]` | More directories that get the same files, e.g. `['/']` with `pathPrefix: '/public/'`. The tags use `pathPrefix`. |
 | `base` | `/` | URL the build output is served from, e.g. a CDN. Vite uses its own `base`. |
 | `root` | Vite's `root`, else `process.cwd()` | Where the config file lookup and relative paths start, and where `node_modules/.cache/favicon-generator` is. |
 | `inject` | `true` | Vite: add the `<link>`/`<meta>` tags to every HTML page. |

@@ -37,6 +37,25 @@ describe('vite build', () => {
     expect(manifest.icons[0].src).toBe('/app/icons/favicon-192x192.png')
   })
 
+  it('writes the files to every mirror and links them under pathPrefix', async () => {
+    const root = copyFixture('app')
+    await build({
+      root,
+      logLevel: 'silent',
+      plugins: [favicons({ input: './favicon.svg', pathPrefix: '/public/', mirrorPrefixes: ['/'] })],
+    })
+
+    const dist = join(root, 'dist')
+    const files = listFiles(dist)
+    for (const file of DEFAULT_FILES) {
+      expect(files).toContain(`public/${file}`)
+      expect(files).toContain(file)
+    }
+    const tags = headTags(readFileSync(join(dist, 'index.html'), 'utf8'))
+    expect(tags).toContain('<link rel="icon" type="image/svg+xml" href="/public/favicon.svg">')
+    expect(tags.join('\n')).not.toMatch(/href="\/favicon/)
+  })
+
   it('bundles the tags into the virtual module', async () => {
     const root = copyFixture('app')
     await build({ root, logLevel: 'silent', plugins: [favicons({ input: './favicon.svg' })] })
@@ -134,6 +153,27 @@ describe('vite dev server', () => {
       await server.close()
     }
   })
+  it('serves the files under every mirror', async () => {
+    const root = copyFixture('app')
+    const server = await createServer({
+      root,
+      logLevel: 'silent',
+      server: { port: 0, ws: false },
+      plugins: [favicons({ input: './favicon.svg', pathPrefix: '/public/', mirrorPrefixes: ['/'] })],
+    })
+    await server.listen()
+    try {
+      const url = server.resolvedUrls!.local[0]!
+      for (const path of ['public/favicon.svg', 'favicon.svg', 'public/favicon.ico', 'favicon.ico']) {
+        const response = await fetch(new URL(path, url))
+        expect(response.status, path).toBe(200)
+        expect(response.headers.get('content-type'), path).toMatch(/^image\//)
+      }
+    } finally {
+      await server.close()
+    }
+  })
+
   it('regenerates the files when the image changes', async () => {
     const root = copyFixture('app')
     const server = await createServer({
