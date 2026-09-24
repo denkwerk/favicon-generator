@@ -99,8 +99,10 @@ included by default.
 | `manifest.scope` | `--scope` | `scope` |
 | `manifest.display` | `--display` | `display`: `fullscreen`, `standalone`, `minimal-ui`, `browser` |
 | `manifest.backgroundColor` | `--background-color` | `background_color`, also behind maskable icons |
-| `manifest.maskable` | `--maskable` | adds maskable icons (the image at 60 % on `backgroundColor`) |
+| `manifest.maskable` | `--maskable` | adds maskable icons (the image at 60 % on `backgroundColor`), one per icon size |
 | `manifest.crossorigin` | `--manifest-crossorigin` | `crossorigin` on the manifest `<link>` |
+| `manifest.iconSizes` | `--manifest-icon-sizes` | icon sizes listed in the manifest (default `192,512`) |
+| `manifest.iconPurpose` | `--manifest-icon-purpose` | `purpose` of those icons, e.g. `any maskable` |
 | **`windows`** | `--[no-]windows` | adds `browserconfig.xml`, tile images, `msapplication-*` tags |
 | `windows.tileColor` | `--tile-color` | `msapplication-TileColor` |
 | **`legacy`** | `--[no-]legacy` | adds 19 PNG sizes, sized Apple touch icons, a 7-frame `favicon.ico` |

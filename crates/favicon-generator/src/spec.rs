@@ -22,8 +22,10 @@ pub const LEGACY_APPLE_TOUCH_SIZES: &[u32] = &[120, 152];
 /// `<link rel="apple-touch-icon" sizes=…>` entries with `legacy`, pointing at `favicon-{N}x{N}.png`.
 pub const LEGACY_APPLE_TOUCH_LINK_SIZES: &[u32] = &[57, 60, 72, 76, 114, 120, 144, 152, 180];
 
-/// Icons listed in `manifest.json`.
-pub const MANIFEST_SIZES: &[u32] = &[192, 512];
+/// Icons listed in `manifest.json`, unless `manifest.iconSizes` is set.
+pub const DEFAULT_MANIFEST_SIZES: &[u32] = &[192, 512];
+/// Largest size `manifest.iconSizes` accepts.
+pub const MAX_ICON_SIZE: u32 = 4096;
 /// Share of a maskable icon covered by the image; the rest is background, so
 /// that Android's masks do not cut into it.
 pub const MASKABLE_SCALE: f32 = 0.6;

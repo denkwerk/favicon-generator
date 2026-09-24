@@ -149,12 +149,20 @@ pub struct ManifestConfig {
     /// `display` mode.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display: Option<Display>,
-    /// Add maskable icons (the image at 60% on `backgroundColor`) for Android. Default: `false`.
+    /// Add maskable icons (the image at 60% on `backgroundColor`, one per icon size) for Android.
+    /// Default: `false`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maskable: Option<bool>,
     /// `crossorigin` attribute for the manifest `<link>`, e.g. `use-credentials`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crossorigin: Option<String>,
+    /// Sizes of the icons listed in the manifest, in px. Default: `[192, 512]`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, schemars(schema_with = "icon_sizes_schema"))]
+    pub icon_sizes: Option<Vec<u32>>,
+    /// `purpose` of the manifest icons, e.g. `any maskable`. Not set by default.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon_purpose: Option<String>,
 }
 
 /// Options of the Windows tiles.
@@ -222,6 +230,16 @@ fn color_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
     })
 }
 
+#[cfg(test)]
+fn icon_sizes_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
+    schemars::json_schema!({
+        "type": "array",
+        "items": { "type": "integer", "minimum": 1, "maximum": crate::spec::MAX_ICON_SIZE },
+        "minItems": 1,
+        "description": "Sizes of the icons listed in the manifest, in px. Default: `[192, 512]`."
+    })
+}
+
 /// Options that 0.2.0 moved into groups, with their new place.
 const RENAMED: [(&str, &str); 10] = [
     ("appName", "manifest.name"),
@@ -235,7 +253,10 @@ const RENAMED: [(&str, &str); 10] = [
     ("startUrl", "manifest.startUrl"),
     ("scope", "manifest.scope"),
     ("display", "manifest.display"),
-    ("iconPurpose", "manifest.maskable"),
+    (
+        "iconPurpose",
+        "manifest.iconPurpose (or manifest.maskable for separate maskable icons)",
+    ),
     ("manifestCrossorigin", "manifest.crossorigin"),
 ];
 
@@ -411,6 +432,9 @@ pub struct Manifest {
     pub display: Option<Display>,
     pub maskable: bool,
     pub crossorigin: Option<String>,
+    /// Sorted and without duplicates.
+    pub icon_sizes: Vec<u32>,
+    pub icon_purpose: Option<String>,
 }
 
 #[derive(Debug)]
@@ -442,6 +466,30 @@ fn group<T: Default>(
         Some(Toggle::Options(options)) => options,
         _ => T::default(),
     })
+}
+
+/// `manifest.iconSizes`, sorted and without duplicates; the default if unset.
+/// The CLI already checked the range, the config file is checked here.
+fn icon_sizes(sizes: Option<Vec<u32>>) -> Result<Vec<u32>> {
+    let Some(sizes) = sizes else {
+        return Ok(crate::spec::DEFAULT_MANIFEST_SIZES.to_vec());
+    };
+    if sizes.is_empty() {
+        bail!("manifest.iconSizes must not be empty; leave it out for the default 192 and 512 px");
+    }
+    if let Some(size) = sizes
+        .iter()
+        .find(|&&size| size == 0 || size > crate::spec::MAX_ICON_SIZE)
+    {
+        bail!(
+            "invalid manifest.iconSizes in config: {size} (sizes are 1 to {} px)",
+            crate::spec::MAX_ICON_SIZE
+        );
+    }
+    let mut sizes = sizes;
+    sizes.sort_unstable();
+    sizes.dedup();
+    Ok(sizes)
 }
 
 /// A color from the CLI (already validated) or the config file (validated here).
@@ -508,7 +556,9 @@ impl Settings {
             || cli.scope.is_some()
             || cli.display.is_some()
             || cli.maskable
-            || cli.manifest_crossorigin.is_some();
+            || cli.manifest_crossorigin.is_some()
+            || cli.manifest_icon_sizes.is_some()
+            || cli.manifest_icon_purpose.is_some();
         let manifest = match group(
             file.manifest,
             cli.manifest,
@@ -530,6 +580,8 @@ impl Settings {
                 display: cli.display.or(options.display),
                 maskable: cli.maskable || options.maskable.unwrap_or(false),
                 crossorigin: cli.manifest_crossorigin.or(options.crossorigin),
+                icon_sizes: icon_sizes(cli.manifest_icon_sizes.or(options.icon_sizes))?,
+                icon_purpose: cli.manifest_icon_purpose.or(options.icon_purpose),
             }),
             None => None,
         };
@@ -733,6 +785,66 @@ mod tests {
             r#"{ "manifest": { "shortName": "App" } }"#,
         );
         assert_eq!(s.manifest.unwrap().short_name.as_deref(), Some("App"));
+    }
+
+    #[test]
+    fn manifest_icon_sizes_and_purpose() {
+        let manifest = merge(&["-i", "a.svg", "--manifest"], "{}")
+            .manifest
+            .unwrap();
+        assert_eq!(manifest.icon_sizes, [192, 512]);
+        assert_eq!(manifest.icon_purpose, None);
+
+        // Sorted and deduplicated; the options turn the manifest on.
+        let manifest = merge(
+            &["-i", "a.svg"],
+            r#"{ "manifest": { "iconSizes": [512, 72, 192, 72], "iconPurpose": "any maskable" } }"#,
+        )
+        .manifest
+        .unwrap();
+        assert_eq!(manifest.icon_sizes, [72, 192, 512]);
+        assert_eq!(manifest.icon_purpose.as_deref(), Some("any maskable"));
+
+        // Flags win over the file.
+        let manifest = merge(
+            &[
+                "-i",
+                "a.svg",
+                "--manifest-icon-sizes",
+                "96,144",
+                "--manifest-icon-purpose",
+                "any",
+            ],
+            r#"{ "manifest": { "iconSizes": [512], "iconPurpose": "maskable" } }"#,
+        )
+        .manifest
+        .unwrap();
+        assert_eq!(manifest.icon_sizes, [96, 144]);
+        assert_eq!(manifest.icon_purpose.as_deref(), Some("any"));
+        assert!(
+            merge(&["-i", "a.svg", "--manifest-icon-purpose", "any"], "{}")
+                .manifest
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn validates_manifest_icon_sizes() {
+        for json in [
+            r#"{ "manifest": { "iconSizes": [] } }"#,
+            r#"{ "manifest": { "iconSizes": [0] } }"#,
+            r#"{ "manifest": { "iconSizes": [192, 5000] } }"#,
+        ] {
+            let err = Settings::merge(cli(&["a.svg"]), file(json)).unwrap_err();
+            assert!(
+                format!("{err:#}").contains("manifest.iconSizes"),
+                "{json}: {err:#}"
+            );
+        }
+        assert!(Cli::try_parse_from(["favicon-generator", "--manifest-icon-sizes", "0"]).is_err());
+        assert!(
+            Cli::try_parse_from(["favicon-generator", "--manifest-icon-sizes", "192,big"]).is_err()
+        );
     }
 
     #[test]

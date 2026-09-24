@@ -26,8 +26,8 @@ pub fn png_sizes(settings: &Settings) -> BTreeSet<u32> {
     if settings.legacy {
         sizes.extend(spec::LEGACY_PNG_SIZES);
     }
-    if settings.manifest.is_some() {
-        sizes.extend(spec::MANIFEST_SIZES);
+    if let Some(manifest) = &settings.manifest {
+        sizes.extend(&manifest.icon_sizes);
     }
     if settings.windows.is_some() {
         sizes.extend(spec::TILE_SIZES);
@@ -113,7 +113,7 @@ pub fn generate(settings: &Settings, source: &Source) -> Result<Vec<OutputFile>>
             .as_deref()
             .map(|color| crate::cli::rgb(color).expect("validated color"))
             .unwrap_or([255, 255, 255]);
-        for &size in spec::MANIFEST_SIZES {
+        for &size in &manifest.icon_sizes {
             let inner = source.render((size as f32 * spec::MASKABLE_SCALE).round() as u32)?;
             files.push(OutputFile {
                 name: spec::maskable_name(size),

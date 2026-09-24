@@ -123,6 +123,54 @@ fn manifest_only_contains_what_is_configured() {
 }
 
 #[test]
+fn manifest_lists_the_configured_icon_sizes_with_their_purpose() {
+    let project = Project::new();
+    project.run(&[
+        "-i",
+        "logo.svg",
+        "-o",
+        "out",
+        "--manifest-icon-sizes",
+        "72,512,144",
+        "--manifest-icon-purpose",
+        "any maskable",
+    ]);
+    // Sizes that nothing else generates are rendered for the manifest.
+    let files = project.files("out");
+    for file in [
+        "favicon-72x72.png",
+        "favicon-144x144.png",
+        "favicon-512x512.png",
+    ] {
+        assert!(files.iter().any(|f| f == file), "{file} missing: {files:?}");
+    }
+    assert!(
+        !files.iter().any(|f| f == "favicon-192x192.png"),
+        "{files:?}"
+    );
+
+    let manifest: serde_json::Value =
+        serde_json::from_str(&project.read("out/manifest.json")).unwrap();
+    let icons: Vec<(String, String, String)> = manifest["icons"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|icon| {
+            let field = |key: &str| icon[key].as_str().unwrap().to_owned();
+            (field("src"), field("sizes"), field("purpose"))
+        })
+        .collect();
+    assert_eq!(
+        icons,
+        [72, 144, 512].map(|size| (
+            format!("/favicon-{size}x{size}.png"),
+            format!("{size}x{size}"),
+            "any maskable".to_owned()
+        ))
+    );
+}
+
+#[test]
 fn legacy_adds_the_old_sizes() {
     let project = Project::new();
     project.run(&["-i", "logo.svg", "-o", "out", "--legacy"]);

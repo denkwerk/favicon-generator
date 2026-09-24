@@ -38,6 +38,8 @@ const manifest = {
   display: true,
   maskable: true,
   crossorigin: true,
+  iconSizes: true,
+  iconPurpose: true,
 } satisfies Keys<ManifestOptions>
 
 const windows = { tileColor: true } satisfies Keys<WindowsOptions>

@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
 
+use crate::spec::MAX_ICON_SIZE;
+
 /// Generate favicons, an Apple touch icon and head tags from a single SVG
 /// (recommended) or raster image, or from a Figma node.
 ///
@@ -123,13 +125,26 @@ pub struct Cli {
     #[arg(long, value_enum, help_heading = "Web app manifest")]
     pub display: Option<Display>,
 
-    /// Add maskable icons (the image at 60% on `background_color`) for Android.
+    /// Add maskable icons (the image at 60% on `background_color`, one per icon size) for Android.
     #[arg(long, help_heading = "Web app manifest")]
     pub maskable: bool,
 
     /// `crossorigin` attribute for the manifest `<link>`, e.g. `use-credentials`.
     #[arg(long, help_heading = "Web app manifest")]
     pub manifest_crossorigin: Option<String>,
+
+    /// Sizes of the icons listed in the manifest, comma-separated [default: 192,512].
+    #[arg(
+        long,
+        value_delimiter = ',',
+        value_parser = clap::value_parser!(u32).range(1..=MAX_ICON_SIZE as i64),
+        help_heading = "Web app manifest"
+    )]
+    pub manifest_icon_sizes: Option<Vec<u32>>,
+
+    /// `purpose` of the manifest icons, e.g. `any maskable`.
+    #[arg(long, help_heading = "Web app manifest")]
+    pub manifest_icon_purpose: Option<String>,
 
     /// Generate browserconfig.xml and tile images (implied by --tile-color).
     #[arg(long, overrides_with = "no_windows", help_heading = "Windows tiles")]

@@ -28,10 +28,14 @@ export interface ManifestOptions {
   scope?: string
   /** `display` mode. */
   display?: Display
-  /** Add maskable icons (the image at 60% on `backgroundColor`) for Android. @default false */
+  /** Add maskable icons (the image at 60% on `backgroundColor`, one per icon size) for Android. @default false */
   maskable?: boolean
   /** `crossorigin` attribute for the manifest `<link>`, e.g. `use-credentials`. */
   crossorigin?: string
+  /** Sizes of the icons listed in the manifest, in px (1 to 4096). @default [192, 512] */
+  iconSizes?: number[]
+  /** `purpose` of the manifest icons, e.g. `any maskable`. Not set by default. */
+  iconPurpose?: string
 }
 
 /** Options of the Windows tiles. */

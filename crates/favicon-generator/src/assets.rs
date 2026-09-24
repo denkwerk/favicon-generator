@@ -4,8 +4,8 @@ use serde_json::{Map, Value, json};
 
 use crate::config::Settings;
 use crate::spec::{
-    ICON_SIZE, LEGACY_APPLE_TOUCH_LINK_SIZES, LEGACY_ICON_LINK_SIZES, MANIFEST_SIZES,
-    TILE_IMAGE_SIZE, TILE_SIZES, maskable_name, png_name,
+    ICON_SIZE, LEGACY_APPLE_TOUCH_LINK_SIZES, LEGACY_ICON_LINK_SIZES, TILE_IMAGE_SIZE, TILE_SIZES,
+    maskable_name, png_name,
 };
 
 /// What the text assets describe: the settings, and whether the source was an SVG.
@@ -23,18 +23,23 @@ impl Config<'_> {
 /// `manifest.json` with the configured fields; `None` if the manifest is off.
 pub fn manifest(cfg: &Config) -> Option<String> {
     let manifest = cfg.settings.manifest.as_ref()?;
-    let mut icons: Vec<Value> = MANIFEST_SIZES
+    let mut icons: Vec<Value> = manifest
+        .icon_sizes
         .iter()
         .map(|&size| {
-            json!({
+            let mut icon = json!({
                 "src": cfg.url(&png_name(size)),
                 "type": "image/png",
                 "sizes": format!("{size}x{size}"),
-            })
+            });
+            if let Some(purpose) = &manifest.icon_purpose {
+                icon["purpose"] = Value::String(purpose.clone());
+            }
+            icon
         })
         .collect();
     if manifest.maskable {
-        icons.extend(MANIFEST_SIZES.iter().map(|&size| {
+        icons.extend(manifest.icon_sizes.iter().map(|&size| {
             json!({
                 "src": cfg.url(&maskable_name(size)),
                 "type": "image/png",

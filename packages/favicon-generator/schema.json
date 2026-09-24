@@ -244,7 +244,7 @@
           ]
         },
         "maskable": {
-          "description": "Add maskable icons (the image at 60% on `backgroundColor`) for Android. Default: `false`.",
+          "description": "Add maskable icons (the image at 60% on `backgroundColor`, one per icon size) for Android.\nDefault: `false`.",
           "type": [
             "boolean",
             "null"
@@ -256,11 +256,29 @@
             "string",
             "null"
           ]
+        },
+        "iconSizes": {
+          "description": "Sizes of the icons listed in the manifest, in px. Default: `[192, 512]`.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4096
+          },
+          "minItems": 1
+        },
+        "iconPurpose": {
+          "description": "`purpose` of the manifest icons, e.g. `any maskable`. Not set by default.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "additionalProperties": false,
       "required": [
-        "backgroundColor"
+        "backgroundColor",
+        "iconSizes"
       ]
     },
     "Display": {
