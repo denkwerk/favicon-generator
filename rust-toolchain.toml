@@ -1,0 +1,7 @@
+# The Rust version for development and CI. rustup (and mise, see mise.toml)
+# install it on first use. Bump it deliberately: CI denies warnings, so a new
+# release with new lints lands as its own change instead of breaking main.
+[toolchain]
+channel = "1.98.1"
+components = ["clippy", "rustfmt"]
+profile = "minimal"
