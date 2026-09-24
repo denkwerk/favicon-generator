@@ -36,7 +36,9 @@
     "webpack",
     "webpack-plugin",
     "rspack",
-    "rspack-plugin"
+    "rspack-plugin",
+    "nuxt",
+    "nuxt-module"
   ],
   "type": "module",
   "exports": {

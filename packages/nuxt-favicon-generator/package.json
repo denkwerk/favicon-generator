@@ -29,7 +29,19 @@
     "nuxt-module",
     "nuxt3",
     "nuxt4",
-    "nitro"
+    "nitro",
+    "vite",
+    "vite-plugin",
+    "rollup",
+    "rollup-plugin",
+    "rolldown",
+    "rolldown-plugin",
+    "tsdown",
+    "webpack",
+    "webpack-plugin",
+    "rspack",
+    "rspack-plugin",
+    "unplugin"
   ],
   "type": "module",
   "exports": {
