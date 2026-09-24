@@ -79,6 +79,16 @@ export interface FaviconConfig {
    */
   legacy?: boolean
   /**
+   * Reuse the generated files while the input and the options are unchanged,
+   * and a Figma export while the Figma file's version is unchanged. @default true
+   */
+  cache?: boolean
+  /**
+   * Directory for the cache. @default 'node_modules/.cache/favicon-generator'
+   * in the project root, if it has a `node_modules` directory
+   */
+  cacheDir?: string
+  /**
    * Figma personal access token (scope `file_content:read`). Prefer the
    * `FIGMA_TOKEN` env var or `figmaTokenFile` over committing a token.
    */

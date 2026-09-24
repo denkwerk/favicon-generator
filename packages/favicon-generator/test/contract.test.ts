@@ -20,6 +20,8 @@ const config = {
   manifest: true,
   windows: true,
   legacy: true,
+  cache: true,
+  cacheDir: true,
   figmaToken: true,
   figmaTokenFile: true,
 } satisfies Keys<FaviconConfig>
