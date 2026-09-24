@@ -152,6 +152,23 @@ pub struct Cli {
     #[arg(long, overrides_with = "legacy", help_heading = "Legacy")]
     pub no_legacy: bool,
 
+    /// Directory for the cache, which reuses the generated files while the
+    /// input and the options are unchanged, and a Figma export while the Figma
+    /// file is unchanged [default: node_modules/.cache/favicon-generator in the
+    /// project root, if it has a node_modules directory].
+    #[arg(
+        long,
+        env = "FAVICON_GENERATOR_CACHE_DIR",
+        conflicts_with = "no_cache",
+        help_heading = "Cache"
+    )]
+    pub cache_dir: Option<PathBuf>,
+
+    /// Generate everything and export from Figma again, without reading or
+    /// writing the cache.
+    #[arg(long, help_heading = "Cache")]
+    pub no_cache: bool,
+
     /// Figma personal access token (scope `file_content:read`), used when the input is a Figma link.
     #[arg(
         long,

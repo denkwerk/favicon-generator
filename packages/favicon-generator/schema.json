@@ -95,6 +95,20 @@
         "null"
       ]
     },
+    "cache": {
+      "description": "Reuse the generated files while the input and the options are\nunchanged, and a Figma export while the Figma file is unchanged.\nDefault: `true`.",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "cacheDir": {
+      "description": "Directory for the cache. Default: `node_modules/.cache/favicon-generator`\nin the project root, if it has a `node_modules` directory.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "figmaToken": {
       "description": "Figma personal access token (scope `file_content:read`). Prefer the\n`FIGMA_TOKEN` env var or `figmaTokenFile` over committing a token.",
       "type": [

@@ -75,23 +75,27 @@ pub fn resolve_token(flag: Option<&str>, file: Option<&Path>) -> Result<String> 
     Ok(token)
 }
 
-/// Exports `node` as SVG and downloads it.
-pub fn fetch_svg(node: &NodeRef, token: &str) -> Result<Vec<u8>> {
-    let agent: ureq::Agent = ureq::Agent::config_builder()
+fn agent() -> ureq::Agent {
+    ureq::Agent::config_builder()
         .http_status_as_error(false)
         .timeout_global(Some(Duration::from_secs(60)))
         .build()
-        .into();
+        .into()
+}
 
-    // Step 1: ask Figma to render the node; it answers with a short-lived download URL.
+/// Calls the REST API at `path` and returns the JSON response, turning error
+/// responses into messages with a hint.
+fn get_json(
+    agent: &ureq::Agent,
+    path: &str,
+    query: &[(&str, &str)],
+    token: &str,
+) -> Result<(Value, String)> {
     let api_base = std::env::var(API_BASE_ENV).unwrap_or_else(|_| API_BASE.to_owned());
     let mut response = agent
-        .get(format!("{api_base}/images/{}", node.file_key))
+        .get(format!("{api_base}{path}"))
         .header("X-Figma-Token", token)
-        .query("ids", &node.node_id)
-        .query("format", "svg")
-        .query("svg_outline_text", "true")
-        .query("svg_include_id", "false")
+        .query_pairs(query.iter().copied())
         .call()
         .context("failed to reach the Figma API")?;
     let status = response.status();
@@ -117,6 +121,48 @@ pub fn fetch_svg(node: &NodeRef, token: &str) -> Result<Vec<u8>> {
     if let Some(err) = json["err"].as_str() {
         bail!("Figma API error: {err}");
     }
+    Ok((json, body))
+}
+
+/// The current version of the file that contains `node`. It changes with
+/// every saved edit, so an export made at the same version is still current.
+pub fn file_version(node: &NodeRef, token: &str) -> Result<String> {
+    // Only the file's metadata is needed; depth=1 keeps the node tree out.
+    let (json, body) = get_json(
+        &agent(),
+        &format!("/files/{}/nodes", node.file_key),
+        &[("ids", &node.node_id), ("depth", "1")],
+        token,
+    )?;
+    if json["nodes"][&node.node_id].is_null() {
+        bail!(
+            "Figma file {} has no node {}; response: {body}",
+            node.file_key,
+            node.node_id
+        );
+    }
+    json["version"]
+        .as_str()
+        .map(str::to_owned)
+        .with_context(|| format!("the Figma API response has no file version: {body}"))
+}
+
+/// Exports `node` as SVG and downloads it.
+pub fn fetch_svg(node: &NodeRef, token: &str) -> Result<Vec<u8>> {
+    let agent = agent();
+
+    // Step 1: ask Figma to render the node; it answers with a short-lived download URL.
+    let (json, body) = get_json(
+        &agent,
+        &format!("/images/{}", node.file_key),
+        &[
+            ("ids", &node.node_id),
+            ("format", "svg"),
+            ("svg_outline_text", "true"),
+            ("svg_include_id", "false"),
+        ],
+        token,
+    )?;
 
     let Some(image_url) = json["images"][&node.node_id].as_str() else {
         bail!(

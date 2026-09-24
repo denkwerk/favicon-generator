@@ -16,12 +16,15 @@ impl Source {
     pub fn load(path: &Path) -> Result<Self> {
         let raw =
             std::fs::read(path).with_context(|| format!("failed to read {}", path.display()))?;
-
         let is_svg = path
             .extension()
             .and_then(|e| e.to_str())
             .is_some_and(|e| e.eq_ignore_ascii_case("svg"));
+        Self::decode(raw, is_svg, path)
+    }
 
+    /// Decodes the contents of the file at `path`.
+    pub fn decode(raw: Vec<u8>, is_svg: bool, path: &Path) -> Result<Self> {
         if is_svg {
             Self::from_svg(raw, path.parent()).with_context(|| path.display().to_string())
         } else {

@@ -93,6 +93,15 @@ pub struct FileConfig {
     /// sized Apple touch icons and a 7-frame `favicon.ico`. Default: `false`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub legacy: Option<bool>,
+    /// Reuse the generated files while the input and the options are
+    /// unchanged, and a Figma export while the Figma file is unchanged.
+    /// Default: `true`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache: Option<bool>,
+    /// Directory for the cache. Default: `node_modules/.cache/favicon-generator`
+    /// in the project root, if it has a `node_modules` directory.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_dir: Option<PathBuf>,
     /// Figma personal access token (scope `file_content:read`). Prefer the
     /// `FIGMA_TOKEN` env var or `figmaTokenFile` over committing a token.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -257,6 +266,7 @@ impl FileConfig {
             self.input = Some(join(base, input).to_string_lossy().into_owned());
         }
         self.output = self.output.map(|p| join(base, p));
+        self.cache_dir = self.cache_dir.map(|p| join(base, p));
         self.figma_token_file = self.figma_token_file.map(|p| join(base, p));
         self
     }
@@ -377,6 +387,10 @@ pub struct Settings {
     pub manifest: Option<Manifest>,
     pub windows: Option<Windows>,
     pub legacy: bool,
+    /// Whether to use a cache.
+    pub cache: bool,
+    /// The configured cache directory; see [`crate::cache::Cache::default_dir`] otherwise.
+    pub cache_dir: Option<PathBuf>,
     pub figma_token: Option<String>,
     pub figma_token_file: Option<PathBuf>,
 }
@@ -550,6 +564,8 @@ impl Settings {
             manifest,
             windows,
             legacy,
+            cache: !cli.no_cache && file.cache.unwrap_or(true),
+            cache_dir: cli.cache_dir.or(file.cache_dir),
             figma_token: cli.figma_token.or(file.figma_token),
             figma_token_file: cli.figma_token_file.or(file.figma_token_file),
         })

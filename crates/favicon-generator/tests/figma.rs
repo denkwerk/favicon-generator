@@ -126,3 +126,141 @@ fn requires_a_token() {
         "{stderr}"
     );
 }
+
+fn nodes_response(version: &str) -> (u16, String) {
+    (
+        200,
+        format!(r#"{{ "version": "{version}", "nodes": {{ "12:34": {{ "document": {{}} }} }} }}"#),
+    )
+}
+
+fn export_responses(base: &str, svg: &str) -> [(u16, String); 2] {
+    [
+        (
+            200,
+            format!(r#"{{ "err": null, "images": {{ "12:34": "{base}/download.svg" }} }}"#),
+        ),
+        (200, svg.to_owned()),
+    ]
+}
+
+/// Runs against the mock with a cache and returns the request paths and stderr.
+fn run_cached(project: &Project, base: &str, requests: &Requests) -> (Vec<String>, String) {
+    let output = project
+        .command()
+        .args(["-i", LINK, "-o", "out", "-y", "--cache-dir", "cache"])
+        .env("FAVICON_GENERATOR_FIGMA_API", format!("{base}/v1"))
+        .env("FIGMA_TOKEN", "secret-token")
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert!(output.status.success(), "{stderr}");
+    let paths = requests
+        .try_iter()
+        .map(|(line, _)| line.split(['?', ' ']).nth(1).unwrap().to_owned())
+        .collect();
+    (paths, stderr + &String::from_utf8_lossy(&output.stdout))
+}
+
+#[test]
+fn reuses_the_export_while_the_file_is_unchanged() {
+    let (base, requests) = mock(|base| {
+        let mut responses = vec![nodes_response("1")];
+        responses.extend(export_responses(base, LOGO));
+        responses.push(nodes_response("1"));
+        responses
+    });
+    let project = Project::new();
+
+    let (paths, _) = run_cached(&project, &base, &requests);
+    assert_eq!(
+        paths,
+        [
+            "/v1/files/FILEKEY/nodes",
+            "/v1/images/FILEKEY",
+            "/download.svg"
+        ]
+    );
+
+    // One small request instead of an export and a download.
+    let (paths, output) = run_cached(&project, &base, &requests);
+    assert_eq!(paths, ["/v1/files/FILEKEY/nodes"]);
+    assert!(
+        output.contains("is unchanged; reusing the export"),
+        "{output}"
+    );
+    assert!(output.contains("from the cache"), "{output}");
+    assert_eq!(project.read("out/favicon.svg"), LOGO);
+}
+
+#[test]
+fn exports_again_when_the_file_changed() {
+    let changed = LOGO.replace("<svg", "<svg data-changed=\"1\"");
+    let (base, requests) = mock(|base| {
+        let mut responses = vec![nodes_response("1")];
+        responses.extend(export_responses(base, LOGO));
+        // Another part of the file changed; the node looks the same.
+        responses.push(nodes_response("2"));
+        responses.extend(export_responses(base, LOGO));
+        // The node itself changed.
+        responses.push(nodes_response("3"));
+        responses.extend(export_responses(base, &changed));
+        responses
+    });
+    let project = Project::new();
+    run_cached(&project, &base, &requests);
+
+    let (paths, output) = run_cached(&project, &base, &requests);
+    assert_eq!(paths.len(), 3, "{paths:?}");
+    // The same SVG renders to the same files.
+    assert!(output.contains("from the cache"), "{output}");
+
+    let (paths, output) = run_cached(&project, &base, &requests);
+    assert_eq!(paths.len(), 3, "{paths:?}");
+    assert!(!output.contains("from the cache"), "{output}");
+    assert_eq!(project.read("out/favicon.svg"), changed);
+}
+
+#[test]
+fn falls_back_to_the_cached_export_when_figma_fails() {
+    let (base, requests) = mock(|base| {
+        let mut responses = vec![nodes_response("1")];
+        responses.extend(export_responses(base, LOGO));
+        responses.push((
+            429,
+            r#"{ "status": 429, "err": "Rate limit exceeded" }"#.into(),
+        ));
+        responses
+    });
+    let project = Project::new();
+    run_cached(&project, &base, &requests);
+
+    let (_, output) = run_cached(&project, &base, &requests);
+    assert!(
+        output.contains("could not check Figma for changes, reusing the export from just now")
+            && output.contains("Rate limit exceeded"),
+        "{output}"
+    );
+    assert_eq!(project.read("out/favicon.svg"), LOGO);
+
+    // Without a token, too.
+    let output = project.run(&["-i", LINK, "-o", "out", "-y", "--cache-dir", "cache"]);
+    assert!(String::from_utf8_lossy(&output.stderr).contains("a Figma access token is required"));
+}
+
+#[test]
+fn does_not_check_the_version_without_a_cache() {
+    let (base, requests) = mock(|base| export_responses(base, LOGO).into());
+    let project = Project::new();
+    std::fs::create_dir(project.path("node_modules")).unwrap();
+    let output = project
+        .command()
+        .args(["-i", LINK, "-o", "out", "--no-cache"])
+        .env("FAVICON_GENERATOR_FIGMA_API", format!("{base}/v1"))
+        .env("FIGMA_TOKEN", "secret-token")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(requests.try_iter().count(), 2);
+    assert!(!project.path("node_modules/.cache").exists());
+}
