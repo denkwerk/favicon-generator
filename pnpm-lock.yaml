@@ -244,6 +244,15 @@ importers:
         specifier: ^5.111.1
         version: 5.111.1(esbuild@0.28.2)
 
+  scripts:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.13.6
+        version: 24.13.6
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
 packages:
 
   '@actions/core@3.0.1':
