@@ -1,0 +1,16 @@
+name: Feature request
+description: A file, option or integration you are missing
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do?
+      description: The use case, e.g. the platform or browser that needs another icon, or the tool you want to integrate with
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: How could it work?
+      description: Optional. An option name, an example config or the expected output.
