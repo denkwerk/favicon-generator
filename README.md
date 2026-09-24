@@ -307,6 +307,15 @@ and the old names are rejected with a hint:
 | [`@denkwerk/nuxt-favicon-generator`](packages/nuxt-favicon-generator) | [![npm](https://img.shields.io/npm/v/@denkwerk/nuxt-favicon-generator?color=02969c&label=)](https://www.npmjs.com/package/@denkwerk/nuxt-favicon-generator) | Nuxt module: generates, serves and links the favicons |
 | [`@denkwerk/unplugin-favicon-generator`](packages/unplugin-favicon-generator) | [![npm](https://img.shields.io/npm/v/@denkwerk/unplugin-favicon-generator?color=02969c&label=)](https://www.npmjs.com/package/@denkwerk/unplugin-favicon-generator) | Vite, Rollup, Rolldown, webpack and Rspack plugin: emits the favicons with the build and, in Vite, links them |
 
+All packages are also published to [GitHub Packages](https://github.com/orgs/denkwerk/packages?repo_name=favicon-generator),
+for projects that resolve the `@denkwerk` scope from there:
+
+```ini
+# .npmrc
+@denkwerk:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}   # a token with read:packages
+```
+
 Prebuilt binaries cover macOS (arm64, x64), Linux (arm64, x64, static musl) and Windows (x64, also used on Arm).
 The Rust crate lives in [`crates/favicon-generator`](crates/favicon-generator) and is not published to crates.io.
 

@@ -74,16 +74,18 @@ since the last tag whether to release and which version:
 is the commit message; the [PR title check](.github/workflows/pr-title.yml) makes sure it is a Conventional Commit.
 To leave 0.x, remove the `releaseRules` for breaking changes and features in [`release.config.mjs`](release.config.mjs).
 
-A release runs CI, builds the binaries, publishes the npm packages, commits the version bump and
+A release runs CI, builds the binaries, publishes the packages to npm and GitHub Packages, commits the version bump and
 [`CHANGELOG.md`](CHANGELOG.md) (`chore(release): x.y.z`), tags it and creates a GitHub release with the archived
 binaries. Pushes to a `next` branch publish prereleases (`0.2.0-next.1`) to the `next` dist-tag.
 
 Running the workflow manually (*Actions → Release → Run workflow*) is a dry run that builds and packs everything.
-With a tag (`v0.2.0`), it publishes that existing release to npm again, e.g. after a failed publish; versions
-already on npm are skipped.
+With a tag (`v0.2.0`), it publishes that existing release again, e.g. after a failed publish; versions already on
+a registry are skipped.
 
 npm authentication uses [trusted publishing](https://docs.npmjs.com/trusted-publishers): npm accepts publishes of
 the packages only from `release.yml` in this repository, in the `npm` GitHub environment. There is no npm token.
+GitHub Packages gets the same tarballs, published with the workflow's `GITHUB_TOKEN` (`packages: write`) and
+without provenance, which GitHub Packages does not support. It needs no setup for a new package.
 
 ### Adding a package
 

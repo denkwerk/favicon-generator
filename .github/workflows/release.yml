@@ -221,6 +221,7 @@ jobs:
     permissions:
       contents: write # release commit, tag and GitHub release
       id-token: write # npm trusted publishing and provenance
+      packages: write # GitHub Packages, next to npm
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
@@ -262,6 +263,7 @@ jobs:
         if: needs.version.outputs.mode == 'recover'
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
           NPM_CONFIG_PROVENANCE: ${{ !github.event.repository.private }}
         run: |
