@@ -22,6 +22,7 @@
       <excludeFolder url="file://$MODULE_DIR$/packages/favicon-generator/.turbo" />
       <excludeFolder url="file://$MODULE_DIR$/packages/nuxt-favicon-generator/.turbo" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
+      <excludeFolder url="file://$MODULE_DIR$/scripts/.turbo" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
