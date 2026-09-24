@@ -5,7 +5,15 @@ releases work. For using the packages, see the [README](README.md).
 
 ## Setup
 
-Requires Node.js ≥ 22.18, pnpm and a Rust toolchain.
+The tool versions are pinned (see [Tool versions](#tool-versions)). With [mise](https://mise.jdx.dev), one
+command installs all of them:
+
+```bash
+mise install
+```
+
+Without mise, install Node.js from [`mise.toml`](mise.toml) (≥ 22.18 works), pnpm and
+[rustup](https://rustup.rs), which picks up [`rust-toolchain.toml`](rust-toolchain.toml).
 
 ```bash
 pnpm install
@@ -17,6 +25,31 @@ pnpm --filter example-vite dev             # the Vite example in dev mode
 
 To try the Figma export, copy [`.env.example`](.env.example) to `.env.local` (gitignored) and set `FIGMA_TOKEN`. In CI,
 the Figma example runs when a `FIGMA_TOKEN` repository secret is set.
+
+### Tool versions
+
+| Tool | Pinned in | Notes |
+| --- | --- | --- |
+| Rust, clippy, rustfmt | [`rust-toolchain.toml`](rust-toolchain.toml) | read by rustup, IDEs and mise |
+| pnpm | `packageManager` in [`package.json`](package.json) | pnpm switches to that version itself |
+| Node.js, zig, cargo-zigbuild, cargo-insta | [`mise.toml`](mise.toml), with checksums in [`mise.lock`](mise.lock) | zig and cargo-zigbuild build the static Linux binaries of a release |
+| mise itself in CI | `MISE_VERSION` in [`ci.yml`](.github/workflows/ci.yml) and [`release.yml`](.github/workflows/release.yml) | |
+
+CI and the release workflow install the same versions. Dependabot proposes new Rust releases and GitHub Actions;
+the tools in `mise.toml` are bumped by hand:
+
+```bash
+mise outdated --bump                   # newer versions, also across majors
+# edit the versions in mise.toml, then update the checksums for all CI platforms:
+mise lock --platform linux-x64,linux-arm64,macos-arm64,macos-x64,windows-x64
+```
+
+A new Rust release can bring new clippy lints, and CI denies warnings, so bump Rust in a PR of its own. The
+`engines` ranges in the `package.json` files are the Node.js versions the packages support, not the development
+version.
+
+To build a static Linux binary as a release does: `rustup target add x86_64-unknown-linux-musl`, then
+`cargo zigbuild --release --target x86_64-unknown-linux-musl`.
 
 Commit messages and PR titles are [Conventional Commits](https://www.conventionalcommits.org), because they decide
 the next release (see [Releasing](#releasing)).
