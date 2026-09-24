@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/denkwerk/favicon-generator/compare/v0.2.5...v0.2.6) (2026-09-24)
+
+### Features
+
+* **core:** configure the manifest's icon sizes and purpose ([97c8729](https://github.com/denkwerk/favicon-generator/commit/97c8729e9b4c67dcc5e8c4af6ce3ef1448fe85f6))
+* **nuxt,unplugin:** serve the files under more paths with mirrorPrefixes ([00d4a95](https://github.com/denkwerk/favicon-generator/commit/00d4a951fdd197a8db9eaaeb54543714bf2ed576))
+
 ## [0.2.5](https://github.com/denkwerk/favicon-generator/compare/v0.2.4...v0.2.5) (2026-09-24)
 
 ### Features
