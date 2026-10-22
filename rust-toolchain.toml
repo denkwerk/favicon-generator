@@ -2,6 +2,6 @@
 # install it on first use. Bump it deliberately: CI denies warnings, so a new
 # release with new lints lands as its own change instead of breaking main.
 [toolchain]
-channel = "1.98.1"
+channel = "1.99.1"
 components = ["clippy", "rustfmt"]
 profile = "minimal"
